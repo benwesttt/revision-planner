@@ -6,6 +6,7 @@ const links = [
   { to: '/courses', label: 'Courses' },
   { to: '/log-session', label: 'Log Session' },
   { to: '/timetable', label: 'Timetable' },
+  { to: '/assessments', label: 'Assessments' },
 ];
 
 export default function Sidebar() {
