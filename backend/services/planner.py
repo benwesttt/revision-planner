@@ -113,8 +113,11 @@ def _score_topic(
     else:
         days_since = max(0, (today - last_session.created_at.date()).days)
         score += min(days_since, 30)
-        label = "day" if days_since == 1 else "days"
-        reasons.append(f"last revised {days_since} {label} ago")
+        if days_since == 0:
+            reasons.append("revised today")
+        else:
+            label = "day" if days_since == 1 else "days"
+            reasons.append(f"last revised {days_since} {label} ago")
 
         if last_session.confidence is not None:
             conf_score = (5 - last_session.confidence) * 2
