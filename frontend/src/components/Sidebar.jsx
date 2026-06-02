@@ -5,6 +5,7 @@ const links = [
   { to: '/weekly-plan', label: 'Weekly Plan' },
   { to: '/courses', label: 'Courses' },
   { to: '/log-session', label: 'Log Session' },
+  { to: '/timetable', label: 'Timetable' },
 ];
 
 export default function Sidebar() {

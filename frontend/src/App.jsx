@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import WeeklyPlan from './pages/WeeklyPlan';
 import Courses from './pages/Courses';
 import LogSession from './pages/LogSession';
+import Timetable from './pages/Timetable';
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
               <Route path="/weekly-plan" element={<WeeklyPlan />} />
               <Route path="/courses" element={<Courses />} />
               <Route path="/log-session" element={<LogSession />} />
+              <Route path="/timetable" element={<Timetable />} />
             </Routes>
           </main>
         </div>
