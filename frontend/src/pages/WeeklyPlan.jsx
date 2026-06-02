@@ -1,3 +1,246 @@
+import { useState, useEffect, useMemo } from 'react';
+import { API_BASE_URL } from '../api';
+
+const USER_ID = 1;
+
+function formatTime(isoStr) {
+  return new Date(isoStr).toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function formatDayHeading(dateStr) {
+  return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
+}
+
+function addDays(dateStr, n) {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export default function WeeklyPlan() {
-  return <h1 className="text-2xl font-semibold text-white">Weekly Plan coming soon</h1>;
+  const [plan, setPlan] = useState(null);
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Lookup maps built from metadata fetches
+  const [courseMap, setCourseMap] = useState({});   // id → {name, color}
+  const [topicMap, setTopicMap] = useState({});     // id → {name, courseId}
+  const [resourceMap, setResourceMap] = useState({}); // id → {name}
+
+  // Fetch courses + topics + resources on mount so the maps are ready
+  useEffect(() => {
+    async function loadMeta() {
+      try {
+        const [coursesRes, resourcesRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/courses/?user_id=${USER_ID}`),
+          fetch(`${API_BASE_URL}/resources/`),
+        ]);
+        const courses = coursesRes.ok ? await coursesRes.json() : [];
+        const resources = resourcesRes.ok ? await resourcesRes.json() : [];
+
+        const cMap = {};
+        courses.forEach(c => { cMap[c.id] = { name: c.name, color: c.color }; });
+        setCourseMap(cMap);
+
+        const rMap = {};
+        resources.forEach(r => { rMap[r.id] = { name: r.name }; });
+        setResourceMap(rMap);
+
+        // Fetch topics for every course
+        const topicLists = await Promise.all(
+          courses.map(c =>
+            fetch(`${API_BASE_URL}/topics/?course_id=${c.id}`)
+              .then(r => (r.ok ? r.json() : []))
+          )
+        );
+        const tMap = {};
+        topicLists.flat().forEach(t => {
+          tMap[t.id] = { name: t.name, courseId: t.course_id };
+        });
+        setTopicMap(tMap);
+      } catch {
+        // Non-fatal — plan can still be displayed without names if this fails
+      }
+    }
+    loadMeta();
+  }, []);
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE_URL}/planner/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: USER_ID, start_date: todayISO() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail ?? 'Failed to generate plan');
+      }
+      setPlan(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // Group blocks by calendar date, sorted by start_time within each day
+  const blocksByDay = useMemo(() => {
+    if (!plan) return {};
+    const groups = {};
+    for (const block of plan.plan_blocks) {
+      const day = block.start_time.slice(0, 10);
+      if (!groups[day]) groups[day] = [];
+      groups[day].push(block);
+    }
+    for (const day of Object.keys(groups)) {
+      groups[day].sort((a, b) => a.start_time.localeCompare(b.start_time));
+    }
+    return groups;
+  }, [plan]);
+
+  const days = plan
+    ? Array.from({ length: 7 }, (_, i) => addDays(plan.start_date, i))
+    : [];
+
+  return (
+    <div className="max-w-3xl">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-semibold text-white">Weekly Plan</h1>
+        <button
+          onClick={handleGenerate}
+          disabled={generating}
+          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+        >
+          {generating ? 'Generating…' : 'Generate Plan'}
+        </button>
+      </div>
+
+      {error && (
+        <p className="mb-6 text-sm text-red-400 bg-red-900/30 border border-red-800 rounded-lg px-4 py-2">
+          {error}
+        </p>
+      )}
+
+      {/* Empty state */}
+      {!plan && !generating && !error && (
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center mb-4">
+            <svg className="w-7 h-7 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <p className="text-gray-400 text-sm font-medium">No plan yet</p>
+          <p className="text-gray-600 text-sm mt-1">
+            Click <span className="text-indigo-400">Generate Plan</span> to build your 7-day revision schedule
+          </p>
+        </div>
+      )}
+
+      {/* Loading skeleton */}
+      {generating && (
+        <div className="flex flex-col gap-6">
+          {Array.from({ length: 3 }, (_, i) => (
+            <div key={i} className="animate-pulse">
+              <div className="h-4 w-36 bg-gray-800 rounded mb-3" />
+              <div className="flex flex-col gap-2">
+                {Array.from({ length: 2 }, (_, j) => (
+                  <div key={j} className="h-20 bg-gray-800 rounded-xl" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 7-day timeline */}
+      {plan && !generating && (
+        <div className="flex flex-col gap-8">
+          {days.map(day => {
+            const blocks = blocksByDay[day] ?? [];
+            return (
+              <section key={day}>
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+                  {formatDayHeading(day)}
+                </h2>
+
+                {blocks.length === 0 ? (
+                  <p className="text-sm text-gray-700 pl-1">No sessions scheduled</p>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {blocks.map(block => {
+                      const topic = topicMap[block.topic_id];
+                      const course = topic ? courseMap[topic.courseId] : null;
+                      const resource = block.resource_id ? resourceMap[block.resource_id] : null;
+                      const borderColor = course?.color ?? '#6366f1';
+
+                      return (
+                        <div
+                          key={block.id}
+                          className="bg-gray-800 rounded-xl pl-4 pr-4 py-3 border-l-4 border border-gray-700 flex flex-col gap-1"
+                          style={{ borderLeftColor: borderColor }}
+                        >
+                          {/* Time + method row */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-semibold text-white tabular-nums">
+                              {formatTime(block.start_time)} – {formatTime(block.end_time)}
+                            </span>
+                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-700 text-gray-300 capitalize">
+                              {block.method}
+                            </span>
+                          </div>
+
+                          {/* Course / topic */}
+                          <div className="flex items-center gap-1.5">
+                            {course && (
+                              <span
+                                className="w-2 h-2 rounded-full shrink-0"
+                                style={{ backgroundColor: course.color }}
+                              />
+                            )}
+                            <span className="text-sm text-gray-200">
+                              {course?.name ?? `Course ${block.topic_id}`}
+                              <span className="text-gray-500 mx-1">·</span>
+                              {topic?.name ?? `Topic ${block.topic_id}`}
+                            </span>
+                          </div>
+
+                          {/* Resource */}
+                          {resource && (
+                            <span className="text-xs text-indigo-400">
+                              {resource.name}
+                            </span>
+                          )}
+
+                          {/* Reason */}
+                          {block.reason && (
+                            <p className="text-xs text-gray-500 mt-0.5">{block.reason}</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
