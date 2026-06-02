@@ -16,6 +16,7 @@ class AssessmentCreate(AssessmentBase):
 
 
 class AssessmentUpdate(BaseModel):
+    course_id: Optional[int] = None
     name: Optional[str] = None
     type: Optional[str] = None
     due_date: Optional[datetime] = None
