@@ -200,7 +200,7 @@ export default function Dashboard() {
       {hasPlan && (
         <>
           {/* Summary stats */}
-          <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="grid grid-cols-1 gap-3 mb-4 sm:grid-cols-3">
             {[
               { label: 'Completed', value: stats.completed },
               { label: 'Scheduled', value: stats.scheduled },

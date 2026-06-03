@@ -268,7 +268,7 @@ export default function Timetable() {
             autoFocus
             required
           />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1">
               <span className="text-xs text-gray-400">Start time</span>
               <input
@@ -379,7 +379,7 @@ export default function Timetable() {
                             autoFocus
                             required
                           />
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <label className="flex flex-col gap-1">
                               <span className="text-xs text-gray-400">Start time</span>
                               <input

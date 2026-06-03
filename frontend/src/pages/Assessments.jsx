@@ -194,7 +194,7 @@ export default function Assessments() {
         >
           <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">New Assessment</h2>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1">
               <span className="text-xs text-gray-400">Course</span>
               <select
@@ -292,7 +292,7 @@ export default function Assessments() {
                 {isEditing ? (
                   /* ── Edit mode ── */
                   <form onSubmit={e => handleSave(e, a.id)} className="flex flex-col gap-3">
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <label className="flex flex-col gap-1">
                         <span className="text-xs text-gray-400">Course</span>
                         <select

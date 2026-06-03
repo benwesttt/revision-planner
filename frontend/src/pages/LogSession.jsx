@@ -161,7 +161,7 @@ export default function LogSession() {
         className="bg-gray-800 border border-gray-700 rounded-xl p-5 flex flex-col gap-4 mb-8"
       >
         {/* Course + Topic row */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className={labelCls}>
             <span className={labelTextCls}>Course</span>
             <select
@@ -209,7 +209,7 @@ export default function LogSession() {
         </label>
 
         {/* Duration + Date row */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className={labelCls}>
             <span className={labelTextCls}>Duration (minutes)</span>
             <input

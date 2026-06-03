@@ -290,7 +290,7 @@ export default function Onboarding() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-3 sm:p-6">
       <div className="w-full max-w-lg">
         <ProgressBar step={step} />
         <p className="text-center text-xs text-gray-700 mb-6">Step {step} of {TOTAL_STEPS}</p>
@@ -301,7 +301,7 @@ export default function Onboarding() {
           </p>
         )}
 
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 sm:p-8">
 
           {/* ── Step 1: Welcome ── */}
           {step === 1 && (
@@ -639,7 +639,7 @@ export default function Onboarding() {
                     autoFocus
                     required
                   />
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                     <label className="flex flex-col gap-1">
                       <span className="text-xs text-gray-400">Day</span>
                       <select

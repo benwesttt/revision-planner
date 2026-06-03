@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import TopBar from './components/TopBar';
 import Sidebar from './components/Sidebar';
@@ -11,7 +11,6 @@ import Assessments from './pages/Assessments';
 import Resources from './pages/Resources';
 import Onboarding from './pages/Onboarding';
 
-// Redirects to /onboarding on every route except /onboarding itself
 function OnboardingGuard({ children }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -25,14 +24,15 @@ function OnboardingGuard({ children }) {
   return children;
 }
 
-// The main app shell — TopBar + Sidebar + routed content
 function AppShell() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
     <div className="flex flex-col h-screen bg-gray-950 text-gray-100">
-      <TopBar />
-      <div className="flex flex-1 min-h-0">
-        <Sidebar />
-        <main className="flex-1 overflow-y-auto p-8">
+      <TopBar onMenuToggle={() => setSidebarOpen(v => !v)} />
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <main className="flex-1 overflow-y-auto p-4 md:p-8">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/weekly-plan" element={<WeeklyPlan />} />
@@ -53,9 +53,7 @@ export default function App() {
     <BrowserRouter>
       <OnboardingGuard>
         <Routes>
-          {/* Onboarding renders full-screen, outside the app shell */}
           <Route path="/onboarding" element={<Onboarding />} />
-          {/* All other routes go through the shell */}
           <Route path="/*" element={<AppShell />} />
         </Routes>
       </OnboardingGuard>
