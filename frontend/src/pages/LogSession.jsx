@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { API_BASE_URL } from '../api';
 
 const USER_ID = 1;
@@ -42,6 +42,9 @@ export default function LogSession() {
   // Maps for displaying session history
   const [courseMap, setCourseMap] = useState({});
   const [topicMap, setTopicMap] = useState({});
+
+  const [scheduledBlocks, setScheduledBlocks] = useState([]);
+  const pendingTopicIdRef = useRef(null);
 
   const [form, setForm] = useState({
     course_id: '',
@@ -89,6 +92,29 @@ export default function LogSession() {
     fetchSessions();
   }, [fetchSessions]);
 
+  // Fetch today's scheduled plan blocks on mount
+  useEffect(() => {
+    async function loadTodayBlocks() {
+      const today = new Date().toISOString().slice(0, 10);
+      const plansRes = await fetch(`${API_BASE_URL}/plans/?user_id=${USER_ID}`);
+      if (!plansRes.ok) return;
+      const plans = await plansRes.json();
+      if (!plans.length) return;
+      const latest = plans.reduce((a, b) =>
+        new Date(a.generated_at) > new Date(b.generated_at) ? a : b
+      );
+      const blocksRes = await fetch(`${API_BASE_URL}/plan-blocks/?plan_id=${latest.id}`);
+      if (!blocksRes.ok) return;
+      const blocks = await blocksRes.json();
+      setScheduledBlocks(
+        blocks
+          .filter(b => b.start_time.slice(0, 10) === today)
+          .sort((a, b) => a.start_time.localeCompare(b.start_time))
+      );
+    }
+    loadTodayBlocks();
+  }, []);
+
   // Refresh topics dropdown when course changes
   useEffect(() => {
     if (!form.course_id) {
@@ -100,9 +126,29 @@ export default function LogSession() {
       .then(r => (r.ok ? r.json() : []))
       .then(data => {
         setTopics(data);
-        setForm(f => ({ ...f, topic_id: data[0]?.id ?? '' }));
+        const pending = pendingTopicIdRef.current;
+        const topicId = pending && data.some(t => String(t.id) === String(pending))
+          ? String(pending)
+          : String(data[0]?.id ?? '');
+        pendingTopicIdRef.current = null;
+        setForm(f => ({ ...f, topic_id: topicId }));
       });
   }, [form.course_id]);
+
+  const prefillFromBlock = (block) => {
+    const courseId = topicMap[block.topic_id]?.courseId;
+    if (!courseId) return;
+    const durationMins = Math.round(
+      (new Date(block.end_time) - new Date(block.start_time)) / 60000
+    );
+    pendingTopicIdRef.current = String(block.topic_id);
+    setForm(f => ({
+      ...f,
+      course_id: String(courseId),
+      method: METHODS.includes(block.method) ? block.method : f.method,
+      duration_minutes: durationMins,
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -143,6 +189,54 @@ export default function LogSession() {
   return (
     <div className="max-w-2xl">
       <h1 className="text-2xl font-semibold text-white mb-6">Log Session</h1>
+
+      {/* Today's scheduled blocks */}
+      {scheduledBlocks.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+            Today's Scheduled Blocks
+          </h2>
+          <div className="flex flex-col gap-2">
+            {scheduledBlocks.map(block => {
+              const topic = topicMap[block.topic_id];
+              const courseName = topic ? courseMap[topic.courseId] : null;
+              return (
+                <button
+                  key={block.id}
+                  type="button"
+                  onClick={() => prefillFromBlock(block)}
+                  className="text-left bg-gray-800 border border-gray-700 hover:border-indigo-600 rounded-xl px-4 py-3 flex flex-col gap-1 transition-colors group"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-gray-400 tabular-nums">
+                      {new Date(block.start_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                      {' – '}
+                      {new Date(block.end_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <span className="text-xs text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                      Click to pre-fill ↓
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-medium text-white">
+                      {topic?.name ?? `Topic ${block.topic_id}`}
+                    </span>
+                    {courseName && (
+                      <>
+                        <span className="text-gray-600">·</span>
+                        <span className="text-sm text-gray-400">{courseName}</span>
+                      </>
+                    )}
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-gray-700 text-gray-300 capitalize ml-auto">
+                      {block.method}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <form
         onSubmit={handleSubmit}

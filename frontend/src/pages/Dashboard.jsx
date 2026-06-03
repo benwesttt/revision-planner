@@ -53,6 +53,10 @@ export default function Dashboard() {
   const [hasPlan, setHasPlan] = useState(null); // null = loading
   const [error, setError] = useState(null);
 
+  const [loggingBlockId, setLoggingBlockId] = useState(null);
+  const [logConfidence, setLogConfidence] = useState(3);
+  const [loggedBlockIds, setLoggedBlockIds] = useState(new Set());
+
   useEffect(() => {
     async function load() {
       try {
@@ -122,6 +126,32 @@ export default function Dashboard() {
       courses: courseIds.size,
     };
   }, [todayBlocks, todayLoggedCount, topicMap]);
+
+  const handleQuickLog = async (block) => {
+    const durationMins = Math.round(
+      (new Date(block.end_time) - new Date(block.start_time)) / 60000
+    );
+    try {
+      const res = await fetch(`${API_BASE_URL}/revision-sessions/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: USER_ID,
+          topic_id: block.topic_id,
+          method: block.method,
+          duration_minutes: durationMins,
+          confidence: logConfidence,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to log session');
+      setLoggedBlockIds(prev => new Set([...prev, block.id]));
+      setTodayLoggedCount(c => c + 1);
+      setLoggingBlockId(null);
+      setLogConfidence(3);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   if (hasPlan === null && !error) {
     return <p className="text-gray-400">Loading…</p>;
@@ -222,9 +252,23 @@ export default function Dashboard() {
                       <span className="text-sm font-semibold text-white tabular-nums">
                         {formatTime(block.start_time)} – {formatTime(block.end_time)}
                       </span>
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-700 text-gray-300 capitalize">
-                        {block.method}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-700 text-gray-300 capitalize">
+                          {block.method}
+                        </span>
+                        {loggedBlockIds.has(block.id) ? (
+                          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-900/50 text-green-400 border border-green-800">
+                            ✓ Logged
+                          </span>
+                        ) : loggingBlockId !== block.id && (
+                          <button
+                            onClick={() => { setLoggingBlockId(block.id); setLogConfidence(3); }}
+                            className="text-xs px-2 py-0.5 rounded-full bg-indigo-900/50 text-indigo-400 border border-indigo-800 hover:bg-indigo-800/50 transition-colors"
+                          >
+                            Log
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-1.5">
                       {course && (
@@ -238,6 +282,41 @@ export default function Dashboard() {
                     </div>
                     {block.reason && (
                       <p className="text-xs text-gray-500 mt-0.5">{block.reason}</p>
+                    )}
+                    {loggingBlockId === block.id && (
+                      <div className="mt-2 pt-2 border-t border-gray-700 flex items-center gap-3 flex-wrap">
+                        <span className="text-xs text-gray-400">Confidence</span>
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map(n => (
+                            <button
+                              key={n}
+                              type="button"
+                              onClick={() => setLogConfidence(n)}
+                              className="focus:outline-none"
+                              aria-label={`Confidence ${n}`}
+                            >
+                              <svg
+                                className={`w-5 h-5 transition-colors ${n <= logConfidence ? 'text-yellow-400' : 'text-gray-700 hover:text-gray-500'}`}
+                                viewBox="0 0 20 20" fill="currentColor"
+                              >
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => handleQuickLog(block)}
+                          className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-lg transition-colors"
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          onClick={() => setLoggingBlockId(null)}
+                          className="text-xs text-gray-400 hover:text-gray-200 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     )}
                   </div>
                 );
