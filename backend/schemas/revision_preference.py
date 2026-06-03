@@ -9,6 +9,7 @@ class RevisionPreferenceBase(BaseModel):
     min_session_minutes: Optional[int] = None
     max_session_minutes: Optional[int] = None
     current_week: str = 'A'
+    daily_hours_target: Optional[int] = None
 
 
 class RevisionPreferenceCreate(RevisionPreferenceBase):
@@ -20,6 +21,7 @@ class RevisionPreferenceUpdate(BaseModel):
     min_session_minutes: Optional[int] = None
     max_session_minutes: Optional[int] = None
     current_week: Optional[str] = None
+    daily_hours_target: Optional[int] = None
 
 
 class RevisionPreferenceResponse(RevisionPreferenceBase):

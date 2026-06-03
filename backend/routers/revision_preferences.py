@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -42,7 +43,14 @@ def create_revision_preference(
 ):
     pref = RevisionPreference(**payload.dict())
     db.add(pref)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Revision preference already exists for this user",
+        )
     db.refresh(pref)
     return pref
 

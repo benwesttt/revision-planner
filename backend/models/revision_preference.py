@@ -13,5 +13,6 @@ class RevisionPreference(Base):
     min_session_minutes = Column(Integer, nullable=True)
     max_session_minutes = Column(Integer, nullable=True)
     current_week = Column(String, default='A', nullable=False)
+    daily_hours_target = Column(Integer, nullable=True)
 
     user = relationship("User", back_populates="revision_preference")

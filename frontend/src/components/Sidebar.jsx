@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 
 const links = [
   { to: '/', label: 'Dashboard' },
@@ -31,6 +31,14 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
+      <div className="mt-auto p-4 border-t border-gray-800">
+        <Link
+          to="/onboarding"
+          className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
+        >
+          Setup Guide
+        </Link>
+      </div>
     </aside>
   );
 }
