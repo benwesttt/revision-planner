@@ -7,6 +7,7 @@ import Courses from './pages/Courses';
 import LogSession from './pages/LogSession';
 import Timetable from './pages/Timetable';
 import Assessments from './pages/Assessments';
+import Resources from './pages/Resources';
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
               <Route path="/log-session" element={<LogSession />} />
               <Route path="/timetable" element={<Timetable />} />
               <Route path="/assessments" element={<Assessments />} />
+              <Route path="/resources" element={<Resources />} />
             </Routes>
           </main>
         </div>

@@ -14,6 +14,7 @@ class ResourceCreate(ResourceBase):
 
 
 class ResourceUpdate(BaseModel):
+    course_id: Optional[int] = None
     name: Optional[str] = None
     type: Optional[str] = None
 
