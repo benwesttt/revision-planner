@@ -16,6 +16,11 @@ function formatTime(isoStr) {
   return new Date(isoStr).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
+function toDatetimeLocalValue(isoStr) {
+  if (!isoStr) return '';
+  return isoStr.slice(0, 16);
+}
+
 function WeekToggle({ value, onChange, label }) {
   return (
     <div className="flex items-center gap-2">
@@ -55,6 +60,10 @@ export default function Timetable() {
   const [form, setForm] = useState({ title: '', start_time: '', end_time: '', recurring: false, week: 'A' });
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(null);
+
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({ title: '', start_time: '', end_time: '', recurring: false, week: 'both' });
+  const [saving, setSaving] = useState(false);
 
   const fetchEvents = useCallback(async () => {
     try {
@@ -129,6 +138,47 @@ export default function Timetable() {
       setError(err.message);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const startEdit = (ev) => {
+    setEditingId(ev.id);
+    setEditForm({
+      title: ev.title,
+      start_time: toDatetimeLocalValue(ev.start_time),
+      end_time: toDatetimeLocalValue(ev.end_time),
+      recurring: ev.recurring,
+      week: ev.week,
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+  };
+
+  const handleSave = async (e, id) => {
+    e.preventDefault();
+    if (!editForm.title.trim()) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/calendar-events/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: editForm.title.trim(),
+          start_time: editForm.start_time,
+          end_time: editForm.end_time,
+          recurring: editForm.recurring,
+          week: editForm.week,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to update event');
+      setEditingId(null);
+      await fetchEvents();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -311,37 +361,138 @@ export default function Timetable() {
                   {DAYS[dayIndex]}
                 </h2>
                 <div className="flex flex-wrap gap-2">
-                  {dayEvents.map(event => (
-                    <div
-                      key={event.id}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-full text-sm"
-                    >
-                      <span className="text-white font-medium">{event.title}</span>
-                      <span className="text-gray-400 tabular-nums">
-                        {formatTime(event.start_time)}–{formatTime(event.end_time)}
-                      </span>
-                      {event.week !== 'both' && (
-                        <span className="text-xs text-indigo-400">Wk {event.week}</span>
-                      )}
-                      {event.recurring && (
-                        <span className="text-xs text-gray-500" title="Recurring">↻</span>
-                      )}
-                      <button
-                        onClick={() => handleDelete(event.id)}
-                        disabled={deleting === event.id}
-                        className="ml-0.5 text-gray-600 hover:text-red-400 transition-colors disabled:opacity-50"
-                        aria-label="Delete event"
+                  {dayEvents.map(event => {
+                    const isEditing = editingId === event.id;
+
+                    if (isEditing) {
+                      return (
+                        <form
+                          key={event.id}
+                          onSubmit={e => handleSave(e, event.id)}
+                          className="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 flex flex-col gap-3"
+                        >
+                          <input
+                            type="text"
+                            value={editForm.title}
+                            onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))}
+                            className={`${inputCls} w-full`}
+                            autoFocus
+                            required
+                          />
+                          <div className="grid grid-cols-2 gap-3">
+                            <label className="flex flex-col gap-1">
+                              <span className="text-xs text-gray-400">Start time</span>
+                              <input
+                                type="datetime-local"
+                                value={editForm.start_time}
+                                onChange={e => setEditForm(f => ({ ...f, start_time: e.target.value }))}
+                                className={`${inputCls} [color-scheme:dark]`}
+                                required
+                              />
+                            </label>
+                            <label className="flex flex-col gap-1">
+                              <span className="text-xs text-gray-400">End time</span>
+                              <input
+                                type="datetime-local"
+                                value={editForm.end_time}
+                                onChange={e => setEditForm(f => ({ ...f, end_time: e.target.value }))}
+                                className={`${inputCls} [color-scheme:dark]`}
+                                required
+                              />
+                            </label>
+                          </div>
+
+                          <div className="flex flex-col gap-1">
+                            <span className="text-xs text-gray-400">Week</span>
+                            <div className="flex gap-2">
+                              {WEEK_OPTIONS.map(opt => (
+                                <button
+                                  key={opt.value}
+                                  type="button"
+                                  onClick={() => setEditForm(f => ({ ...f, week: opt.value }))}
+                                  className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                                    editForm.week === opt.value
+                                      ? 'bg-indigo-600 border-indigo-500 text-white'
+                                      : 'bg-gray-900 border-gray-700 text-gray-400 hover:text-gray-200'
+                                  }`}
+                                >
+                                  {opt.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={editForm.recurring}
+                              onChange={e => setEditForm(f => ({ ...f, recurring: e.target.checked }))}
+                              className="w-4 h-4 rounded accent-indigo-500"
+                            />
+                            Repeats every week
+                          </label>
+
+                          <div className="flex justify-end gap-2 pt-1 border-t border-gray-700">
+                            <button
+                              type="button"
+                              onClick={cancelEdit}
+                              className="px-3 py-1.5 text-xs text-gray-400 hover:text-gray-200 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={saving}
+                              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+                            >
+                              {saving ? 'Saving…' : 'Save'}
+                            </button>
+                          </div>
+                        </form>
+                      );
+                    }
+
+                    return (
+                      <div
+                        key={event.id}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-full text-sm"
                       >
-                        {deleting === event.id ? (
-                          <span className="text-xs leading-none">…</span>
-                        ) : (
-                          <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                          </svg>
+                        <span className="text-white font-medium">{event.title}</span>
+                        <span className="text-gray-400 tabular-nums">
+                          {formatTime(event.start_time)}–{formatTime(event.end_time)}
+                        </span>
+                        {event.week !== 'both' && (
+                          <span className="text-xs text-indigo-400">Wk {event.week}</span>
                         )}
-                      </button>
-                    </div>
-                  ))}
+                        {event.recurring && (
+                          <span className="text-xs text-gray-500" title="Recurring">↻</span>
+                        )}
+                        <button
+                          onClick={() => startEdit(event)}
+                          className="ml-0.5 text-gray-600 hover:text-indigo-400 transition-colors"
+                          aria-label="Edit event"
+                        >
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDelete(event.id)}
+                          disabled={deleting === event.id}
+                          className="text-gray-600 hover:text-red-400 transition-colors disabled:opacity-50"
+                          aria-label="Delete event"
+                        >
+                          {deleting === event.id ? (
+                            <span className="text-xs leading-none">…</span>
+                          ) : (
+                            <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
             );
