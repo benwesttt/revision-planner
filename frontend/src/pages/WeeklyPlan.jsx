@@ -30,15 +30,15 @@ function todayISO() {
 
 export default function WeeklyPlan() {
   const [plan, setPlan] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
 
-  // Lookup maps built from metadata fetches
-  const [courseMap, setCourseMap] = useState({});   // id → {name, color}
-  const [topicMap, setTopicMap] = useState({});     // id → {name, courseId}
-  const [resourceMap, setResourceMap] = useState({}); // id → {name}
+  const [courseMap, setCourseMap] = useState({});
+  const [topicMap, setTopicMap] = useState({});
+  const [resourceMap, setResourceMap] = useState({});
 
-  // Fetch courses + topics + resources on mount so the maps are ready
+  // Load metadata (courses, topics, resources) for name lookups
   useEffect(() => {
     async function loadMeta() {
       try {
@@ -57,7 +57,6 @@ export default function WeeklyPlan() {
         resources.forEach(r => { rMap[r.id] = { name: r.name }; });
         setResourceMap(rMap);
 
-        // Fetch topics for every course
         const topicLists = await Promise.all(
           courses.map(c =>
             fetch(`${API_BASE_URL}/topics/?course_id=${c.id}`)
@@ -70,10 +69,36 @@ export default function WeeklyPlan() {
         });
         setTopicMap(tMap);
       } catch {
-        // Non-fatal — plan can still be displayed without names if this fails
+        // Non-fatal
       }
     }
     loadMeta();
+  }, []);
+
+  // Auto-load the most recently generated plan on mount
+  useEffect(() => {
+    async function loadLatestPlan() {
+      try {
+        const plansRes = await fetch(`${API_BASE_URL}/plans/?user_id=${USER_ID}`);
+        if (!plansRes.ok) return;
+        const plans = await plansRes.json();
+        if (plans.length === 0) return;
+
+        const latest = plans.reduce((a, b) =>
+          new Date(a.generated_at) > new Date(b.generated_at) ? a : b
+        );
+
+        const blocksRes = await fetch(`${API_BASE_URL}/plan-blocks/?plan_id=${latest.id}`);
+        const blocks = blocksRes.ok ? await blocksRes.json() : [];
+
+        setPlan({ ...latest, plan_blocks: blocks });
+      } catch {
+        // Non-fatal — empty state will show
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadLatestPlan();
   }, []);
 
   const handleGenerate = async () => {
@@ -86,9 +111,7 @@ export default function WeeklyPlan() {
         body: JSON.stringify({ user_id: USER_ID, start_date: todayISO() }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.detail ?? 'Failed to generate plan');
-      }
+      if (!res.ok) throw new Error(data.detail ?? 'Failed to generate plan');
       setPlan(data);
     } catch (err) {
       setError(err.message);
@@ -97,7 +120,6 @@ export default function WeeklyPlan() {
     }
   };
 
-  // Group blocks by calendar date, sorted by start_time within each day
   const blocksByDay = useMemo(() => {
     if (!plan) return {};
     const groups = {};
@@ -116,6 +138,8 @@ export default function WeeklyPlan() {
     ? Array.from({ length: 7 }, (_, i) => addDays(plan.start_date, i))
     : [];
 
+  const showSkeleton = loading || generating;
+
   return (
     <div className="max-w-3xl">
       {/* Header */}
@@ -123,10 +147,10 @@ export default function WeeklyPlan() {
         <h1 className="text-2xl font-semibold text-white">Weekly Plan</h1>
         <button
           onClick={handleGenerate}
-          disabled={generating}
+          disabled={generating || loading}
           className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
         >
-          {generating ? 'Generating…' : 'Generate Plan'}
+          {generating ? 'Generating…' : plan ? 'Regenerate Plan' : 'Generate Plan'}
         </button>
       </div>
 
@@ -136,24 +160,8 @@ export default function WeeklyPlan() {
         </p>
       )}
 
-      {/* Empty state */}
-      {!plan && !generating && !error && (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center mb-4">
-            <svg className="w-7 h-7 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </div>
-          <p className="text-gray-400 text-sm font-medium">No plan yet</p>
-          <p className="text-gray-600 text-sm mt-1">
-            Click <span className="text-indigo-400">Generate Plan</span> to build your 7-day revision schedule
-          </p>
-        </div>
-      )}
-
-      {/* Loading skeleton */}
-      {generating && (
+      {/* Loading / generating skeleton */}
+      {showSkeleton && (
         <div className="flex flex-col gap-6">
           {Array.from({ length: 3 }, (_, i) => (
             <div key={i} className="animate-pulse">
@@ -168,8 +176,24 @@ export default function WeeklyPlan() {
         </div>
       )}
 
+      {/* Empty state — only after load completes with no plan */}
+      {!showSkeleton && !plan && (
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center mb-4">
+            <svg className="w-7 h-7 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <p className="text-gray-400 text-sm font-medium">No plan yet</p>
+          <p className="text-gray-600 text-sm mt-1">
+            Click <span className="text-indigo-400">Generate Plan</span> to build your 7-day revision schedule
+          </p>
+        </div>
+      )}
+
       {/* 7-day timeline */}
-      {plan && !generating && (
+      {!showSkeleton && plan && (
         <div className="flex flex-col gap-8">
           {days.map(day => {
             const blocks = blocksByDay[day] ?? [];
@@ -195,7 +219,6 @@ export default function WeeklyPlan() {
                           className="bg-gray-800 rounded-xl pl-4 pr-4 py-3 border-l-4 border border-gray-700 flex flex-col gap-1"
                           style={{ borderLeftColor: borderColor }}
                         >
-                          {/* Time + method row */}
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-semibold text-white tabular-nums">
                               {formatTime(block.start_time)} – {formatTime(block.end_time)}
@@ -205,7 +228,6 @@ export default function WeeklyPlan() {
                             </span>
                           </div>
 
-                          {/* Course / topic */}
                           <div className="flex items-center gap-1.5">
                             {course && (
                               <span
@@ -220,14 +242,10 @@ export default function WeeklyPlan() {
                             </span>
                           </div>
 
-                          {/* Resource */}
                           {resource && (
-                            <span className="text-xs text-indigo-400">
-                              {resource.name}
-                            </span>
+                            <span className="text-xs text-indigo-400">{resource.name}</span>
                           )}
 
-                          {/* Reason */}
                           {block.reason && (
                             <p className="text-xs text-gray-500 mt-0.5">{block.reason}</p>
                           )}
