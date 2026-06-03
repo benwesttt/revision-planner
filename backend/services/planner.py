@@ -7,6 +7,7 @@ from models.assessment import Assessment
 from models.calendar_event import CalendarEvent
 from models.course import Course
 from models.plan import Plan, PlanBlock
+from models.resource import Resource
 from models.revision_preference import RevisionPreference
 from models.revision_session import RevisionSession
 from models.topic import Topic
@@ -18,7 +19,39 @@ FULL_SESSION_MINUTES = 50
 BREAK_MINUTES = 10
 MIN_SESSION_MINUTES = 25
 BUFFER_MINUTES = 10
+MAX_REVISION_HOURS_PER_DAY = 6
 DEFAULT_METHODS = ["active recall", "flashcards", "notes"]
+
+# Maps revision method keywords → preferred resource types (lowercase)
+_METHOD_RESOURCE_PREFS = {
+    "practice questions": ["tutorial sheet", "problem sheet", "past paper"],
+    "past papers":        ["past paper"],
+    "notes":              ["lecture notes", "textbook"],
+    "review notes":       ["lecture notes", "textbook"],
+    "blurting":           ["lecture notes", "textbook"],
+    "flashcards":         ["flashcard deck"],
+}
+
+
+def _pick_resource(
+    topic_id: int, method: str, db: Session
+) -> Optional[Tuple[int, str]]:
+    """Return (resource_id, resource_name) best matching the method, or None."""
+    links = db.query(TopicResource).filter(TopicResource.topic_id == topic_id).all()
+    if not links:
+        return None
+    resource_ids = [l.resource_id for l in links]
+    resources = db.query(Resource).filter(Resource.id.in_(resource_ids)).all()
+    if not resources:
+        return None
+
+    preferred_types = _METHOD_RESOURCE_PREFS.get(method.lower(), [])
+    if preferred_types:
+        for res in resources:
+            if res.type.lower() in preferred_types:
+                return res.id, res.name
+
+    return resources[0].id, resources[0].name
 
 
 def _merge_events(
@@ -215,14 +248,38 @@ def generate_plan(user_id: int, start_date: date, db: Session) -> Plan:
     db.flush()  # assigns plan.id without committing
 
     # 6. Fill slots, cycling through topics and methods
-    for i, (slot_start, slot_end) in enumerate(slots):
-        _score, reason, topic = scored[i % len(scored)]
-        method = methods[i % len(methods)]
+    used_topics_per_day: dict = {}   # date → set of topic_ids already scheduled
+    day_minutes: dict = {}           # date → total revision minutes scheduled
 
-        tr: Optional[TopicResource] = (
-            db.query(TopicResource)
-            .filter(TopicResource.topic_id == topic.id)
-            .first()
+    block_count = 0  # used only to cycle methods across all blocks
+    for slot_start, slot_end in slots:
+        slot_day = slot_start.date()
+        slot_mins = int((slot_end - slot_start).total_seconds() / 60)
+
+        # Daily hour cap: skip slot if day is full
+        if day_minutes.get(slot_day, 0) >= MAX_REVISION_HOURS_PER_DAY * 60:
+            continue
+
+        # No topic repeats per day: find highest-scored topic not yet used today
+        used_today = used_topics_per_day.setdefault(slot_day, set())
+        selected_idx = next(
+            (j for j, (_, _, t) in enumerate(scored) if t.id not in used_today),
+            0,  # all topics exhausted for this day — fall back to top-scored
+        )
+        _score, reason, topic = scored[selected_idx]
+        used_today.add(topic.id)
+        day_minutes[slot_day] = day_minutes.get(slot_day, 0) + slot_mins
+
+        method = methods[block_count % len(methods)]
+        block_count += 1
+
+        # Resource suggestion
+        resource_result = _pick_resource(topic.id, method, db)
+        resource_id = resource_result[0] if resource_result else None
+        full_reason = (
+            f"Resource: {resource_result[1]}. {reason}"
+            if resource_result
+            else reason
         )
 
         db.add(
@@ -232,8 +289,8 @@ def generate_plan(user_id: int, start_date: date, db: Session) -> Plan:
                 start_time=slot_start,
                 end_time=slot_end,
                 method=method,
-                resource_id=tr.resource_id if tr else None,
-                reason=reason,
+                resource_id=resource_id,
+                reason=full_reason,
             )
         )
 

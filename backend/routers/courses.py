@@ -4,7 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
+from models.assessment import Assessment
 from models.course import Course
+from models.plan import PlanBlock
+from models.revision_session import RevisionSession
+from models.topic import Topic
+from models.topic_resource import TopicResource
 from schemas.course import CourseCreate, CourseResponse, CourseUpdate
 
 router = APIRouter(prefix="/courses", tags=["courses"])
@@ -52,5 +57,28 @@ def delete_course(course_id: int, db: Session = Depends(get_db)):
     course = db.query(Course).filter(Course.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
+
+    topic_ids = [
+        t.id for t in db.query(Topic.id).filter(Topic.course_id == course_id).all()
+    ]
+
+    if topic_ids:
+        db.query(TopicResource).filter(
+            TopicResource.topic_id.in_(topic_ids)
+        ).delete(synchronize_session=False)
+        db.query(RevisionSession).filter(
+            RevisionSession.topic_id.in_(topic_ids)
+        ).delete(synchronize_session=False)
+        db.query(PlanBlock).filter(
+            PlanBlock.topic_id.in_(topic_ids)
+        ).delete(synchronize_session=False)
+        db.query(Topic).filter(
+            Topic.course_id == course_id
+        ).delete(synchronize_session=False)
+
+    db.query(Assessment).filter(
+        Assessment.course_id == course_id
+    ).delete(synchronize_session=False)
+
     db.delete(course)
     db.commit()

@@ -17,6 +17,13 @@ export default function Courses() {
   const [topicForms, setTopicForms] = useState({});
   const [topicSubmitting, setTopicSubmitting] = useState(null);
 
+  const [editingCourseId, setEditingCourseId] = useState(null);
+  const [editCourseName, setEditCourseName] = useState('');
+  const [courseEditSaving, setCourseEditSaving] = useState(false);
+
+  const [pendingDeleteCourse, setPendingDeleteCourse] = useState(null);
+  const [deletingCourse, setDeletingCourse] = useState(null);
+
   const fetchCourses = useCallback(async () => {
     try {
       setLoading(true);
@@ -85,6 +92,47 @@ export default function Courses() {
       setError(err.message);
     } finally {
       setTopicSubmitting(null);
+    }
+  };
+
+  const startEditCourse = (course) => {
+    setPendingDeleteCourse(null);
+    setEditingCourseId(course.id);
+    setEditCourseName(course.name);
+  };
+
+  const cancelEditCourse = () => setEditingCourseId(null);
+
+  const handleSaveCourse = async (e, courseId) => {
+    e.preventDefault();
+    if (!editCourseName.trim()) return;
+    setCourseEditSaving(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/courses/${courseId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editCourseName.trim() }),
+      });
+      if (!res.ok) throw new Error('Failed to update course');
+      setEditingCourseId(null);
+      await fetchCourses();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCourseEditSaving(false);
+    }
+  };
+
+  const handleDeleteCourse = async (courseId) => {
+    setDeletingCourse(courseId);
+    try {
+      await fetch(`${API_BASE_URL}/courses/${courseId}`, { method: 'DELETE' });
+      setCourses(prev => prev.filter(c => c.id !== courseId));
+      setPendingDeleteCourse(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDeletingCourse(null);
     }
   };
 
@@ -170,13 +218,77 @@ export default function Courses() {
                 className="bg-gray-800 border border-gray-700 rounded-xl p-4 flex flex-col gap-3"
               >
                 {/* Course header */}
-                <div className="flex items-center gap-2">
-                  <span
-                    className="w-3 h-3 rounded-full shrink-0"
-                    style={{ backgroundColor: course.color }}
-                  />
-                  <span className="font-semibold text-white text-sm">{course.name}</span>
-                </div>
+                {editingCourseId === course.id ? (
+                  <form onSubmit={e => handleSaveCourse(e, course.id)} className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: course.color }} />
+                    <input
+                      type="text"
+                      value={editCourseName}
+                      onChange={e => setEditCourseName(e.target.value)}
+                      className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1 text-sm text-white focus:outline-none focus:border-indigo-500"
+                      autoFocus
+                      required
+                    />
+                    <button
+                      type="submit"
+                      disabled={courseEditSaving}
+                      className="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+                    >
+                      {courseEditSaving ? '…' : 'Save'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelEditCourse}
+                      className="px-2 py-1 text-xs text-gray-400 hover:text-gray-200 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </form>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: course.color }} />
+                    <span className="font-semibold text-white text-sm flex-1">{course.name}</span>
+                    {pendingDeleteCourse === course.id ? (
+                      <>
+                        <span className="text-xs text-gray-400">Delete?</span>
+                        <button
+                          onClick={() => handleDeleteCourse(course.id)}
+                          disabled={deletingCourse === course.id}
+                          className="text-xs px-2 py-1 bg-red-700 hover:bg-red-600 disabled:opacity-50 text-white rounded-lg transition-colors"
+                        >
+                          {deletingCourse === course.id ? '…' : 'Yes'}
+                        </button>
+                        <button
+                          onClick={() => setPendingDeleteCourse(null)}
+                          className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+                        >
+                          No
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => startEditCourse(course)}
+                          className="text-gray-600 hover:text-indigo-400 transition-colors"
+                          aria-label="Edit course"
+                        >
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => setPendingDeleteCourse(course.id)}
+                          className="text-gray-600 hover:text-red-400 transition-colors"
+                          aria-label="Delete course"
+                        >
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {/* Topics list */}
                 {courseTopics.length > 0 && (
