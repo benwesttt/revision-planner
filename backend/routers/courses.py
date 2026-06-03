@@ -7,6 +7,7 @@ from database import get_db
 from models.assessment import Assessment
 from models.course import Course
 from models.plan import PlanBlock
+from models.resource import Resource
 from models.revision_session import RevisionSession
 from models.topic import Topic
 from models.topic_resource import TopicResource
@@ -78,6 +79,10 @@ def delete_course(course_id: int, db: Session = Depends(get_db)):
 
     db.query(Assessment).filter(
         Assessment.course_id == course_id
+    ).delete(synchronize_session=False)
+
+    db.query(Resource).filter(
+        Resource.course_id == course_id
     ).delete(synchronize_session=False)
 
     db.delete(course)
