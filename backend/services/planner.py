@@ -248,8 +248,11 @@ def generate_plan(user_id: int, start_date: date, db: Session) -> Plan:
     db.flush()  # assigns plan.id without committing
 
     # 6. Fill slots, cycling through topics and methods
-    used_topics_per_day: dict = {}   # date → set of topic_ids already scheduled
-    day_minutes: dict = {}           # date → total revision minutes scheduled
+    used_topics_per_day: dict = {}        # date → set of topic_ids already scheduled
+    day_minutes: dict = {}                # date → total revision minutes scheduled
+    used_courses_per_round: dict = {}     # date → set of course_ids used in current rotation round
+
+    all_course_ids_set = set(course_ids)
 
     block_count = 0  # used only to cycle methods across all blocks
     for slot_start, slot_end in slots:
@@ -260,14 +263,32 @@ def generate_plan(user_id: int, start_date: date, db: Session) -> Plan:
         if day_minutes.get(slot_day, 0) >= MAX_REVISION_HOURS_PER_DAY * 60:
             continue
 
-        # No topic repeats per day: find highest-scored topic not yet used today
         used_today = used_topics_per_day.setdefault(slot_day, set())
+        used_courses_round = used_courses_per_round.setdefault(slot_day, set())
+
+        # Course rotation: prefer courses not yet scheduled in the current round.
+        # When all courses have had a block, start a new rotation round.
+        available_courses = all_course_ids_set - used_courses_round
+        if not available_courses:
+            used_courses_round.clear()
+            available_courses = all_course_ids_set
+
+        # Pick the highest-scored unused topic from an available course
         selected_idx = next(
-            (j for j, (_, _, t) in enumerate(scored) if t.id not in used_today),
-            0,  # all topics exhausted for this day — fall back to top-scored
+            (j for j, (_, _, t) in enumerate(scored)
+             if t.id not in used_today and t.course_id in available_courses),
+            None,
         )
+        if selected_idx is None:
+            # All available-course topics used today — fall back to any unused topic
+            selected_idx = next(
+                (j for j, (_, _, t) in enumerate(scored) if t.id not in used_today),
+                0,  # absolute fallback: all topics exhausted for this day
+            )
+
         _score, reason, topic = scored[selected_idx]
         used_today.add(topic.id)
+        used_courses_round.add(topic.course_id)
         day_minutes[slot_day] = day_minutes.get(slot_day, 0) + slot_mins
 
         method = methods[block_count % len(methods)]
