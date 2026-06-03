@@ -262,9 +262,17 @@ export default function WeeklyPlan() {
                             <span className="text-xs text-indigo-400">{resource.name}</span>
                           )}
 
-                          {block.reason && (
-                            <p className="text-xs text-gray-500 mt-0.5">{block.reason}</p>
-                          )}
+                          {block.reason && (() => {
+                            const howIdx = block.reason.indexOf(' How:');
+                            const chosen = howIdx === -1 ? block.reason : block.reason.slice(0, howIdx);
+                            const how    = howIdx === -1 ? null : block.reason.slice(howIdx + 1);
+                            return (
+                              <>
+                                {chosen && <p className="text-xs text-gray-500 mt-0.5">{chosen}</p>}
+                                {how    && <p className="text-xs text-gray-600 mt-0.5">{how}</p>}
+                              </>
+                            );
+                          })()}
                         </div>
                       );
                     })}
