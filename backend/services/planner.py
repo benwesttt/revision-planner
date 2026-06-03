@@ -51,8 +51,12 @@ def _carve_sessions(
     return sessions
 
 
+def _other_week(week: str) -> str:
+    return 'B' if week == 'A' else 'A'
+
+
 def _get_free_slots(
-    user_id: int, start_date: date, db: Session
+    user_id: int, start_date: date, db: Session, current_week: str = 'A'
 ) -> List[Tuple[datetime, datetime]]:
     window_start = datetime.combine(start_date, time.min)
     window_end = datetime.combine(start_date + timedelta(days=7), time.min)
@@ -67,6 +71,9 @@ def _get_free_slots(
         .all()
     )
 
+    # Monday=0 … Sunday=6; days remaining in current ISO week (Mon–Sun)
+    days_in_start_week = 7 - start_date.weekday()
+
     slots: List[Tuple[datetime, datetime]] = []
 
     for day_offset in range(7):
@@ -74,9 +81,13 @@ def _get_free_slots(
         study_start = datetime.combine(day, STUDY_START)
         study_end = datetime.combine(day, STUDY_END)
 
-        # Clip events to this day's study window
+        day_week = current_week if day_offset < days_in_start_week else _other_week(current_week)
+
+        # Clip events to this day's study window, filtered by week
         day_events: List[Tuple[datetime, datetime]] = []
         for ev in events:
+            if ev.week not in (day_week, 'both'):
+                continue
             clipped_start = max(ev.start_time, study_start)
             clipped_end = min(ev.end_time, study_end)
             if clipped_start < clipped_end:
@@ -156,8 +167,14 @@ def _score_topic(
 
 
 def generate_plan(user_id: int, start_date: date, db: Session) -> Plan:
-    # 1. Find free time slots
-    slots = _get_free_slots(user_id, start_date, db)
+    # 1. Find free time slots, respecting the user's current week setting
+    pref_for_week: Optional[RevisionPreference] = (
+        db.query(RevisionPreference)
+        .filter(RevisionPreference.user_id == user_id)
+        .first()
+    )
+    current_week = pref_for_week.current_week if pref_for_week else 'A'
+    slots = _get_free_slots(user_id, start_date, db, current_week=current_week)
     if not slots:
         raise ValueError("No free time slots found in the next 7 days")
 

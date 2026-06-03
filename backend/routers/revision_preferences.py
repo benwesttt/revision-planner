@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -62,6 +62,27 @@ def update_revision_preference(
         raise HTTPException(status_code=404, detail="Revision preference not found")
     for field, value in payload.dict(exclude_unset=True).items():
         setattr(pref, field, value)
+    db.commit()
+    db.refresh(pref)
+    return pref
+
+
+@router.patch("/current-week", response_model=RevisionPreferenceResponse)
+def set_current_week(
+    user_id: int = Query(...),
+    current_week: str = Query(..., regex="^[AB]$"),
+    db: Session = Depends(get_db),
+):
+    pref = (
+        db.query(RevisionPreference)
+        .filter(RevisionPreference.user_id == user_id)
+        .first()
+    )
+    if pref:
+        pref.current_week = current_week
+    else:
+        pref = RevisionPreference(user_id=user_id, current_week=current_week)
+        db.add(pref)
     db.commit()
     db.refresh(pref)
     return pref

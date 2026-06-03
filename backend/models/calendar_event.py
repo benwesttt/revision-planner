@@ -13,5 +13,6 @@ class CalendarEvent(Base):
     start_time = Column(DateTime, nullable=False)
     end_time = Column(DateTime, nullable=False)
     recurring = Column(Boolean, default=False, nullable=False)
+    week = Column(String, default='both', nullable=False)
 
     user = relationship("User", back_populates="calendar_events")

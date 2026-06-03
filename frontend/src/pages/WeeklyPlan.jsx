@@ -28,11 +28,20 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function dayWeek(startDateStr, dayOffset, currentWeek) {
+  // JS getDay(): 0=Sun,1=Mon,...,6=Sat → convert to Mon-anchored
+  const jsDay = new Date(startDateStr + 'T12:00:00').getDay();
+  const daysInStartWeek = jsDay === 0 ? 1 : 7 - jsDay + 1;
+  const inStartWeek = dayOffset < daysInStartWeek;
+  return inStartWeek ? currentWeek : (currentWeek === 'A' ? 'B' : 'A');
+}
+
 export default function WeeklyPlan() {
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
+  const [currentWeek, setCurrentWeek] = useState('A');
 
   const [courseMap, setCourseMap] = useState({});
   const [topicMap, setTopicMap] = useState({});
@@ -75,8 +84,13 @@ export default function WeeklyPlan() {
     loadMeta();
   }, []);
 
-  // Auto-load the most recently generated plan on mount
+  // Auto-load the most recently generated plan and current_week setting on mount
   useEffect(() => {
+    fetch(`${API_BASE_URL}/revision-preferences/?user_id=${USER_ID}`)
+      .then(r => r.ok ? r.json() : [])
+      .then(prefs => { if (prefs.length > 0) setCurrentWeek(prefs[0].current_week ?? 'A'); })
+      .catch(() => {});
+
     async function loadLatestPlan() {
       try {
         const plansRes = await fetch(`${API_BASE_URL}/plans/?user_id=${USER_ID}`);
@@ -195,12 +209,14 @@ export default function WeeklyPlan() {
       {/* 7-day timeline */}
       {!showSkeleton && plan && (
         <div className="flex flex-col gap-8">
-          {days.map(day => {
+          {days.map((day, i) => {
             const blocks = blocksByDay[day] ?? [];
+            const wk = dayWeek(plan.start_date, i, currentWeek);
             return (
               <section key={day}>
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3 flex items-center gap-2">
                   {formatDayHeading(day)}
+                  <span className="text-indigo-500">· Week {wk}</span>
                 </h2>
 
                 {blocks.length === 0 ? (

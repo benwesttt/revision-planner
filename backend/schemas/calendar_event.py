@@ -10,6 +10,7 @@ class CalendarEventBase(BaseModel):
     start_time: datetime
     end_time: datetime
     recurring: bool = False
+    week: str = 'both'
 
 
 class CalendarEventCreate(CalendarEventBase):
@@ -21,6 +22,7 @@ class CalendarEventUpdate(BaseModel):
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
     recurring: Optional[bool] = None
+    week: Optional[str] = None
 
 
 class CalendarEventResponse(CalendarEventBase):

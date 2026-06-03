@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, JSON
+from sqlalchemy import Column, ForeignKey, Integer, JSON, String
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -12,5 +12,6 @@ class RevisionPreference(Base):
     preferred_methods = Column(JSON, nullable=True)
     min_session_minutes = Column(Integer, nullable=True)
     max_session_minutes = Column(Integer, nullable=True)
+    current_week = Column(String, default='A', nullable=False)
 
     user = relationship("User", back_populates="revision_preference")
