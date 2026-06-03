@@ -252,23 +252,9 @@ export default function Dashboard() {
                       <span className="text-sm font-semibold text-white tabular-nums">
                         {formatTime(block.start_time)} – {formatTime(block.end_time)}
                       </span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-700 text-gray-300 capitalize">
-                          {block.method}
-                        </span>
-                        {loggedBlockIds.has(block.id) ? (
-                          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-900/50 text-green-400 border border-green-800">
-                            ✓ Logged
-                          </span>
-                        ) : loggingBlockId !== block.id && (
-                          <button
-                            onClick={() => { setLoggingBlockId(block.id); setLogConfidence(3); }}
-                            className="text-xs px-2 py-0.5 rounded-full bg-indigo-900/50 text-indigo-400 border border-indigo-800 hover:bg-indigo-800/50 transition-colors"
-                          >
-                            Log
-                          </button>
-                        )}
-                      </div>
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-700 text-gray-300 capitalize">
+                        {block.method}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       {course && (
@@ -283,6 +269,22 @@ export default function Dashboard() {
                     {block.reason && (
                       <p className="text-xs text-gray-500 mt-0.5">{block.reason}</p>
                     )}
+                    {!loggingBlockId || loggingBlockId !== block.id ? (
+                      <div className="flex justify-end mt-1">
+                        {loggedBlockIds.has(block.id) ? (
+                          <span className="text-xs font-medium px-3 py-1.5 rounded-lg bg-green-900/50 text-green-400 border border-green-800">
+                            ✓ Logged
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => { setLoggingBlockId(block.id); setLogConfidence(3); }}
+                            className="text-xs px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition-colors"
+                          >
+                            Log
+                          </button>
+                        )}
+                      </div>
+                    ) : null}
                     {loggingBlockId === block.id && (
                       <div className="mt-2 pt-2 border-t border-gray-700 flex items-center gap-3 flex-wrap">
                         <span className="text-xs text-gray-400">Confidence</span>
