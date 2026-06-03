@@ -3,6 +3,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 
 from database import get_db
 from models.revision_preference import RevisionPreference
@@ -70,6 +71,9 @@ def update_revision_preference(
         raise HTTPException(status_code=404, detail="Revision preference not found")
     for field, value in payload.dict(exclude_unset=True).items():
         setattr(pref, field, value)
+    # JSON columns require an explicit dirty flag so SQLAlchemy includes
+    # them in the UPDATE even when replacing null with a list or vice versa.
+    flag_modified(pref, 'preferred_methods')
     db.commit()
     db.refresh(pref)
     return pref

@@ -70,15 +70,18 @@ def _merge_events(
 
 
 def _carve_sessions(
-    gap_start: datetime, gap_end: datetime
+    gap_start: datetime,
+    gap_end: datetime,
+    full_session_mins: int = FULL_SESSION_MINUTES,
+    min_session_mins: int = MIN_SESSION_MINUTES,
 ) -> List[Tuple[datetime, datetime]]:
     sessions = []
     cursor = gap_start
     while True:
         remaining_mins = int((gap_end - cursor).total_seconds() / 60)
-        if remaining_mins < MIN_SESSION_MINUTES:
+        if remaining_mins < min_session_mins:
             break
-        duration = min(FULL_SESSION_MINUTES, remaining_mins)
+        duration = min(full_session_mins, remaining_mins)
         sessions.append((cursor, cursor + timedelta(minutes=duration)))
         cursor += timedelta(minutes=duration + BREAK_MINUTES)
     return sessions
@@ -89,7 +92,12 @@ def _other_week(week: str) -> str:
 
 
 def _get_free_slots(
-    user_id: int, start_date: date, db: Session, current_week: str = 'A'
+    user_id: int,
+    start_date: date,
+    db: Session,
+    current_week: str = 'A',
+    full_session_mins: int = FULL_SESSION_MINUTES,
+    min_session_mins: int = MIN_SESSION_MINUTES,
 ) -> List[Tuple[datetime, datetime]]:
     window_start = datetime.combine(start_date, time.min)
     window_end = datetime.combine(start_date + timedelta(days=7), time.min)
@@ -131,10 +139,10 @@ def _get_free_slots(
         cursor = study_start
         for block_start, block_end in blocked:
             if block_start > cursor:
-                slots.extend(_carve_sessions(cursor, block_start))
+                slots.extend(_carve_sessions(cursor, block_start, full_session_mins, min_session_mins))
             cursor = max(cursor, block_end + timedelta(minutes=BUFFER_MINUTES))
         if cursor < study_end:
-            slots.extend(_carve_sessions(cursor, study_end))
+            slots.extend(_carve_sessions(cursor, study_end, full_session_mins, min_session_mins))
 
     return slots
 
@@ -216,18 +224,32 @@ def _score_topic(
 
 
 def generate_plan(user_id: int, start_date: date, db: Session) -> Plan:
-    # 1. Find free time slots, respecting the user's current week setting
-    pref_for_week: Optional[RevisionPreference] = (
+    # 1. Load user preferences (single fetch used throughout)
+    pref: Optional[RevisionPreference] = (
         db.query(RevisionPreference)
         .filter(RevisionPreference.user_id == user_id)
         .first()
     )
-    current_week = pref_for_week.current_week if pref_for_week else 'A'
-    slots = _get_free_slots(user_id, start_date, db, current_week=current_week)
+
+    current_week      = pref.current_week        if pref and pref.current_week        else 'A'
+    full_session_mins = pref.max_session_minutes  if pref and pref.max_session_minutes  else FULL_SESSION_MINUTES
+    min_session_mins  = pref.min_session_minutes  if pref and pref.min_session_minutes  else MIN_SESSION_MINUTES
+    daily_cap_mins    = (pref.daily_hours_target * 60) if pref and pref.daily_hours_target else MAX_REVISION_HOURS_PER_DAY * 60
+    methods: List[str] = (pref.preferred_methods or []) if pref else []
+    if not methods:
+        methods = DEFAULT_METHODS
+
+    # 2. Find free time slots
+    slots = _get_free_slots(
+        user_id, start_date, db,
+        current_week=current_week,
+        full_session_mins=full_session_mins,
+        min_session_mins=min_session_mins,
+    )
     if not slots:
         raise ValueError("No free time slots found in the next 7 days")
 
-    # 2. Load and score all topics for this user
+    # 3. Load and score all topics for this user
     courses = db.query(Course).filter(Course.user_id == user_id).all()
     if not courses:
         raise ValueError("No courses found for this user")
@@ -237,22 +259,12 @@ def generate_plan(user_id: int, start_date: date, db: Session) -> Plan:
     if not topics:
         raise ValueError("No topics found for this user's courses")
 
-    # 3. Sort by score descending
+    # 4. Sort by score descending
     scored: List[Tuple[int, str, Topic]] = sorted(
         [(_score_topic(topic, start_date, db) + (topic,)) for topic in topics],
         key=lambda x: x[0],
         reverse=True,
     )
-
-    # 4. Revision methods
-    pref: Optional[RevisionPreference] = (
-        db.query(RevisionPreference)
-        .filter(RevisionPreference.user_id == user_id)
-        .first()
-    )
-    methods: List[str] = (pref.preferred_methods or []) if pref else []
-    if not methods:
-        methods = DEFAULT_METHODS
 
     # 5. Build the plan
     plan = Plan(
@@ -276,7 +288,7 @@ def generate_plan(user_id: int, start_date: date, db: Session) -> Plan:
         slot_mins = int((slot_end - slot_start).total_seconds() / 60)
 
         # Daily hour cap: skip slot if day is full
-        if day_minutes.get(slot_day, 0) >= MAX_REVISION_HOURS_PER_DAY * 60:
+        if day_minutes.get(slot_day, 0) >= daily_cap_mins:
             continue
 
         used_today = used_topics_per_day.setdefault(slot_day, set())

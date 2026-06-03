@@ -185,22 +185,31 @@ export default function Onboarding() {
         const postBody = await postRes.text();
         console.error('POST /revision-preferences/ error body:', postBody);
 
-        // Preference already exists — update it (user_id=1 → preference id=1)
-        console.log('PUT /revision-preferences/1 payload:', JSON.stringify(payload, null, 2));
+        // Preference already exists — look up the correct record ID then PUT
+        const listRes = await fetch(`${API_BASE_URL}/revision-preferences/?user_id=${USER_ID}`);
+        if (!listRes.ok) throw new Error('Failed to fetch existing preferences');
+        const prefs = await listRes.json();
+        if (!prefs.length) throw new Error('No existing preference record found');
+        const prefId = prefs[0].id;
 
-        const putRes = await fetch(`${API_BASE_URL}/revision-preferences/1`, {
+        console.log(`PUT /revision-preferences/${prefId} payload:`, JSON.stringify(payload, null, 2));
+
+        const putRes = await fetch(`${API_BASE_URL}/revision-preferences/${prefId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
 
-        console.log('PUT /revision-preferences/1 status:', putRes.status);
+        console.log(`PUT /revision-preferences/${prefId} status:`, putRes.status);
 
         if (!putRes.ok) {
           const putBody = await putRes.text();
-          console.error('PUT /revision-preferences/1 error body:', putBody);
+          console.error(`PUT /revision-preferences/${prefId} error body:`, putBody);
           throw new Error(`Failed to save preferences (PUT ${putRes.status}): ${putBody}`);
         }
+
+        const putData = await putRes.json().catch(() => null);
+        console.log(`PUT /revision-preferences/${prefId} response body:`, JSON.stringify(putData, null, 2));
       }
 
       setStep(5);
