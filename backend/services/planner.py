@@ -153,22 +153,38 @@ def _score_topic(
     )
 
     if last_session is None:
-        score += 100
+        score += 40  # recency: never revised
+        score += 20  # confidence: no data
         reasons.append("never been revised")
     else:
         days_since = max(0, (today - last_session.created_at.date()).days)
-        score += min(days_since, 30)
-        if days_since == 0:
+
+        # Recency scoring
+        if days_since > 14:
+            score += 30
+            reasons.append(f"not revised in {days_since} days")
+        elif days_since > 7:
+            score += 20
+            reasons.append(f"not revised in {days_since} days")
+        elif days_since > 3:
+            score += 10
+            reasons.append(f"not revised in {days_since} days")
+        elif days_since == 0:
             reasons.append("revised today")
         else:
             label = "day" if days_since == 1 else "days"
-            reasons.append(f"last revised {days_since} {label} ago")
+            reasons.append(f"revised {days_since} {label} ago")
 
-        if last_session.confidence is not None:
-            conf_score = (5 - last_session.confidence) * 2
-            score += conf_score
-            if last_session.confidence <= 2:
-                reasons.append(f"low confidence ({last_session.confidence}/5)")
+        # Confidence scoring
+        if last_session.confidence is None:
+            score += 20
+        elif last_session.confidence <= 2:
+            score += 25
+            reasons.append(f"low confidence ({last_session.confidence}/5)")
+        elif last_session.confidence == 3:
+            score += 10
+            reasons.append(f"medium confidence ({last_session.confidence}/5)")
+        # confidence 4–5: +0, no reason appended
 
     next_assessment: Optional[Assessment] = (
         db.query(Assessment)
