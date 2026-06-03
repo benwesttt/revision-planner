@@ -17,6 +17,7 @@ STUDY_END = time(22, 0)
 FULL_SESSION_MINUTES = 50
 BREAK_MINUTES = 10
 MIN_SESSION_MINUTES = 25
+BUFFER_MINUTES = 10
 DEFAULT_METHODS = ["active recall", "flashcards", "notes"]
 
 
@@ -87,7 +88,7 @@ def _get_free_slots(
         for block_start, block_end in blocked:
             if block_start > cursor:
                 slots.extend(_carve_sessions(cursor, block_start))
-            cursor = max(cursor, block_end)
+            cursor = max(cursor, block_end + timedelta(minutes=BUFFER_MINUTES))
         if cursor < study_end:
             slots.extend(_carve_sessions(cursor, study_end))
 
