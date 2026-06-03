@@ -24,6 +24,13 @@ export default function Courses() {
   const [pendingDeleteCourse, setPendingDeleteCourse] = useState(null);
   const [deletingCourse, setDeletingCourse] = useState(null);
 
+  const [editingTopicId, setEditingTopicId] = useState(null);
+  const [editTopicForm, setEditTopicForm] = useState({ name: '', description: '' });
+  const [topicEditSaving, setTopicEditSaving] = useState(false);
+
+  const [pendingDeleteTopic, setPendingDeleteTopic] = useState(null);
+  const [deletingTopic, setDeletingTopic] = useState(null);
+
   const fetchCourses = useCallback(async () => {
     try {
       setLoading(true);
@@ -133,6 +140,57 @@ export default function Courses() {
       setError(err.message);
     } finally {
       setDeletingCourse(null);
+    }
+  };
+
+  const startEditTopic = (topic) => {
+    setPendingDeleteTopic(null);
+    setEditingTopicId(topic.id);
+    setEditTopicForm({ name: topic.name, description: topic.description ?? '' });
+  };
+
+  const cancelEditTopic = () => setEditingTopicId(null);
+
+  const handleSaveTopic = async (e, topic, courseId) => {
+    e.preventDefault();
+    if (!editTopicForm.name.trim()) return;
+    setTopicEditSaving(true);
+    try {
+      const body = { name: editTopicForm.name.trim() };
+      if (editTopicForm.description.trim()) body.description = editTopicForm.description.trim();
+      else body.description = null;
+      const res = await fetch(`${API_BASE_URL}/topics/${topic.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error('Failed to update topic');
+      const updated = await res.json();
+      setTopics(prev => ({
+        ...prev,
+        [courseId]: prev[courseId].map(t => t.id === topic.id ? updated : t),
+      }));
+      setEditingTopicId(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setTopicEditSaving(false);
+    }
+  };
+
+  const handleDeleteTopic = async (topicId, courseId) => {
+    setDeletingTopic(topicId);
+    try {
+      await fetch(`${API_BASE_URL}/topics/${topicId}`, { method: 'DELETE' });
+      setTopics(prev => ({
+        ...prev,
+        [courseId]: prev[courseId].filter(t => t.id !== topicId),
+      }));
+      setPendingDeleteTopic(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDeletingTopic(null);
     }
   };
 
@@ -293,14 +351,101 @@ export default function Courses() {
                 {/* Topics list */}
                 {courseTopics.length > 0 && (
                   <ul className="flex flex-col gap-1">
-                    {courseTopics.map(topic => (
-                      <li key={topic.id} className="flex flex-col px-2 py-1.5 bg-gray-900 rounded-lg">
-                        <span className="text-sm text-gray-200">{topic.name}</span>
-                        {topic.description && (
-                          <span className="text-xs text-gray-500 mt-0.5">{topic.description}</span>
-                        )}
-                      </li>
-                    ))}
+                    {courseTopics.map(topic => {
+                      const isEditingTopic = editingTopicId === topic.id;
+                      const isPendingDelete = pendingDeleteTopic === topic.id;
+
+                      if (isEditingTopic) {
+                        return (
+                          <li key={topic.id} className="bg-gray-900 rounded-lg px-2 py-2 flex flex-col gap-2">
+                            <input
+                              type="text"
+                              value={editTopicForm.name}
+                              onChange={e => setEditTopicForm(f => ({ ...f, name: e.target.value }))}
+                              className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm text-white focus:outline-none focus:border-indigo-500"
+                              autoFocus
+                              required
+                            />
+                            <input
+                              type="text"
+                              placeholder="Description (optional)"
+                              value={editTopicForm.description}
+                              onChange={e => setEditTopicForm(f => ({ ...f, description: e.target.value }))}
+                              className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500"
+                            />
+                            <div className="flex gap-2 justify-end">
+                              <button
+                                type="button"
+                                onClick={cancelEditTopic}
+                                className="px-2 py-1 text-xs text-gray-400 hover:text-gray-200 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                disabled={topicEditSaving}
+                                onClick={e => handleSaveTopic(e, topic, course.id)}
+                                className="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+                              >
+                                {topicEditSaving ? '…' : 'Save'}
+                              </button>
+                            </div>
+                          </li>
+                        );
+                      }
+
+                      return (
+                        <li key={topic.id} className="flex items-start gap-2 px-2 py-1.5 bg-gray-900 rounded-lg">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-gray-200">{topic.name}</p>
+                            {topic.description && (
+                              <p className="text-xs text-gray-500 mt-0.5">{topic.description}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                            {isPendingDelete ? (
+                              <>
+                                <span className="text-xs text-gray-400">Delete?</span>
+                                <button
+                                  onClick={() => handleDeleteTopic(topic.id, course.id)}
+                                  disabled={deletingTopic === topic.id}
+                                  className="text-xs px-1.5 py-0.5 bg-red-700 hover:bg-red-600 disabled:opacity-50 text-white rounded transition-colors"
+                                >
+                                  {deletingTopic === topic.id ? '…' : 'Yes'}
+                                </button>
+                                <button
+                                  onClick={() => setPendingDeleteTopic(null)}
+                                  className="text-xs px-1.5 py-0.5 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors"
+                                >
+                                  No
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => startEditTopic(topic)}
+                                  className="text-gray-600 hover:text-indigo-400 transition-colors"
+                                  aria-label="Edit topic"
+                                >
+                                  <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={() => setPendingDeleteTopic(topic.id)}
+                                  className="text-gray-600 hover:text-red-400 transition-colors"
+                                  aria-label="Delete topic"
+                                >
+                                  <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                  </svg>
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
 
