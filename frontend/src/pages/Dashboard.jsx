@@ -47,6 +47,7 @@ function Stars({ value }) {
 export default function Dashboard() {
   const [todayBlocks, setTodayBlocks] = useState([]);
   const [recentSessions, setRecentSessions] = useState([]);
+  const [todayLoggedCount, setTodayLoggedCount] = useState(0);
   const [courseMap, setCourseMap] = useState({});
   const [topicMap, setTopicMap] = useState({});
   const [hasPlan, setHasPlan] = useState(null); // null = loading
@@ -96,9 +97,13 @@ export default function Dashboard() {
           .sort((a, b) => a.start_time.localeCompare(b.start_time));
         setTodayBlocks(filtered);
 
-        // Fetch last 3 revision sessions
+        // Fetch revision sessions — split into today's count and last-3 for display
         const sessRes = await fetch(`${API_BASE_URL}/revision-sessions/?user_id=${USER_ID}`);
         const sessions = sessRes.ok ? await sessRes.json() : [];
+        const todayStr = todayISO();
+        setTodayLoggedCount(
+          sessions.filter(s => s.created_at.slice(0, 10) === todayStr).length
+        );
         setRecentSessions(sessions.slice(-3).reverse());
       } catch (err) {
         setError(err.message);
@@ -108,19 +113,15 @@ export default function Dashboard() {
   }, []);
 
   const stats = useMemo(() => {
-    const totalMins = todayBlocks.reduce((sum, b) => {
-      const mins = (new Date(b.end_time) - new Date(b.start_time)) / 60000;
-      return sum + mins;
-    }, 0);
     const courseIds = new Set(
       todayBlocks.map(b => topicMap[b.topic_id]?.courseId).filter(Boolean)
     );
     return {
-      sessions: todayBlocks.length,
-      totalMins: Math.round(totalMins),
+      completed: todayLoggedCount,
+      scheduled: todayBlocks.length,
       courses: courseIds.size,
     };
-  }, [todayBlocks, topicMap]);
+  }, [todayBlocks, todayLoggedCount, topicMap]);
 
   if (hasPlan === null && !error) {
     return <p className="text-gray-400">Loading…</p>;
@@ -169,10 +170,10 @@ export default function Dashboard() {
       {hasPlan && (
         <>
           {/* Summary stats */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="grid grid-cols-3 gap-3 mb-4">
             {[
-              { label: 'Sessions today', value: stats.sessions },
-              { label: 'Total time', value: `${stats.totalMins} min` },
+              { label: 'Completed', value: stats.completed },
+              { label: 'Scheduled', value: stats.scheduled },
               { label: 'Courses', value: stats.courses },
             ].map(({ label, value }) => (
               <div key={label} className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3">
@@ -181,6 +182,26 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
+
+          {/* Progress bar */}
+          {stats.scheduled > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs text-gray-400">
+                  {stats.completed} of {stats.scheduled} blocks completed today
+                </span>
+                <span className="text-xs font-medium text-indigo-400">
+                  {Math.round(Math.min(stats.completed / stats.scheduled, 1) * 100)}%
+                </span>
+              </div>
+              <div className="h-2 bg-gray-800 rounded-full overflow-hidden border border-gray-700">
+                <div
+                  className="h-full bg-indigo-600 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min(stats.completed / stats.scheduled, 1) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Today's blocks */}
           {todayBlocks.length === 0 ? (
