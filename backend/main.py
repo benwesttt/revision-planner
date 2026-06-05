@@ -25,6 +25,7 @@ app.add_middleware(
         "http://localhost:5174",
         "https://revision-planner-lyart.vercel.app",
     ],
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_methods=["*"],
     allow_headers=["*"],
 )
