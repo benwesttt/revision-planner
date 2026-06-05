@@ -1,7 +1,7 @@
-fastapi
-uvicorn
+fastapi==0.104.1
+uvicorn==0.24.0
 sqlalchemy
 alembic
-pydantic==1.10.21
+pydantic[email]==1.10.13
 python-dotenv
 psycopg2-binary
