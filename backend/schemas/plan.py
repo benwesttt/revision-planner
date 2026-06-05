@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class PlanBase(BaseModel):
@@ -23,8 +23,7 @@ class PlanResponse(PlanBase):
     id: int
     generated_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PlanBlockBase(BaseModel):
@@ -52,8 +51,7 @@ class PlanBlockUpdate(BaseModel):
 class PlanBlockResponse(PlanBlockBase):
     id: int
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GeneratePlanRequest(BaseModel):
@@ -64,5 +62,4 @@ class GeneratePlanRequest(BaseModel):
 class PlanWithBlocksResponse(PlanResponse):
     plan_blocks: List[PlanBlockResponse] = []
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

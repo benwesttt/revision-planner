@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class ResourceBase(BaseModel):
@@ -22,5 +22,4 @@ class ResourceUpdate(BaseModel):
 class ResourceResponse(ResourceBase):
     id: int
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

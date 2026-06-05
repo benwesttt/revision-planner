@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class RevisionPreferenceBase(BaseModel):
@@ -27,5 +27,4 @@ class RevisionPreferenceUpdate(BaseModel):
 class RevisionPreferenceResponse(RevisionPreferenceBase):
     id: int
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class CalendarEventBase(BaseModel):
@@ -28,5 +28,4 @@ class CalendarEventUpdate(BaseModel):
 class CalendarEventResponse(CalendarEventBase):
     id: int
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
