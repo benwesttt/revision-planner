@@ -20,7 +20,11 @@ app = FastAPI(title="Revision Planner API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "https://revision-planner-lyart.vercel.app",
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
