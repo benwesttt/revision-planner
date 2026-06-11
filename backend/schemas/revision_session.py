@@ -5,6 +5,8 @@ from pydantic import BaseModel, ConfigDict
 
 
 class RevisionSessionBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     user_id: int
     topic_id: int
     method: str
@@ -25,5 +27,3 @@ class RevisionSessionUpdate(BaseModel):
 class RevisionSessionResponse(RevisionSessionBase):
     id: int
     created_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)

@@ -7,6 +7,5 @@ pydantic-settings==2.1.0
 python-dotenv
 psycopg2-binary
 
-PyJWT
-cryptography
+python-jose
 httpx

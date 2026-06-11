@@ -1,9 +1,13 @@
 import os
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import httpx
-import jwt
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import jwt
+from jose.exceptions import JWTError
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -28,33 +32,14 @@ def _get_jwks() -> dict:
 
 def _decode_token(token: str) -> dict:
     try:
-        header = jwt.get_unverified_header(token)
-    except jwt.exceptions.DecodeError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-    kid = header.get("kid")
-    jwks = _get_jwks()
-
-    public_key = None
-    for key_data in jwks.get("keys", []):
-        if key_data.get("kid") == kid:
-            public_key = jwt.algorithms.RSAAlgorithm.from_jwk(key_data)
-            break
-
-    if public_key is None:
-        raise HTTPException(status_code=401, detail="Unable to find matching JWKS key")
-
-    try:
         return jwt.decode(
             token,
-            public_key,
+            _get_jwks(),
             algorithms=["RS256"],
             options={"verify_aud": False},
         )
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+    except JWTError as exc:
+        raise HTTPException(status_code=401, detail=str(exc))
 
 
 def get_current_user(

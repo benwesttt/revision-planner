@@ -1,4 +1,5 @@
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
+import { useClerk } from '@clerk/clerk-react';
 
 const links = [
   { to: '/', label: 'Dashboard' },
@@ -11,6 +12,14 @@ const links = [
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
+  const clerk = useClerk();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await clerk.signOut();
+    navigate('/sign-in');
+  };
+
   return (
     <>
       {/* Mobile backdrop */}
@@ -66,7 +75,7 @@ export default function Sidebar({ isOpen, onClose }) {
           ))}
         </nav>
 
-        <div className="mt-auto p-4 border-t border-gray-800">
+        <div className="mt-auto p-4 border-t border-gray-800 flex flex-col gap-3">
           <Link
             to="/onboarding"
             onClick={onClose}
@@ -74,6 +83,15 @@ export default function Sidebar({ isOpen, onClose }) {
           >
             Setup Guide
           </Link>
+          <button
+            onClick={handleSignOut}
+            className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+          >
+            <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h7a1 1 0 100-2H4V5h6a1 1 0 100-2H3zm11.293 4.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L15.586 11H9a1 1 0 110-2h6.586l-1.293-1.293a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+            Sign out
+          </button>
         </div>
       </aside>
     </>

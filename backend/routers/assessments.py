@@ -42,7 +42,7 @@ def create_assessment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    assessment = Assessment(**payload.dict())
+    assessment = Assessment(**payload.model_dump())
     db.add(assessment)
     db.commit()
     db.refresh(assessment)
@@ -59,7 +59,7 @@ def update_assessment(
     assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
     if not assessment:
         raise HTTPException(status_code=404, detail="Assessment not found")
-    for field, value in payload.dict(exclude_unset=True).items():
+    for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(assessment, field, value)
     db.commit()
     db.refresh(assessment)

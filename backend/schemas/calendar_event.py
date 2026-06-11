@@ -5,6 +5,8 @@ from pydantic import BaseModel, ConfigDict
 
 
 class CalendarEventBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     user_id: int
     title: str
     start_time: datetime
@@ -27,5 +29,3 @@ class CalendarEventUpdate(BaseModel):
 
 class CalendarEventResponse(CalendarEventBase):
     id: int
-
-    model_config = ConfigDict(from_attributes=True)

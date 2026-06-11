@@ -44,7 +44,7 @@ def create_course(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    data = payload.dict()
+    data = payload.model_dump()
     data['user_id'] = current_user.id
     course = Course(**data)
     db.add(course)
@@ -63,7 +63,7 @@ def update_course(
     course = db.query(Course).filter(Course.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
-    for field, value in payload.dict(exclude_unset=True).items():
+    for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(course, field, value)
     db.commit()
     db.refresh(course)

@@ -2,6 +2,8 @@ from pydantic import BaseModel, ConfigDict
 
 
 class TopicResourceBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     topic_id: int
     resource_id: int
 
@@ -12,5 +14,3 @@ class TopicResourceCreate(TopicResourceBase):
 
 class TopicResourceResponse(TopicResourceBase):
     id: int
-
-    model_config = ConfigDict(from_attributes=True)

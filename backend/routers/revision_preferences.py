@@ -52,7 +52,7 @@ def create_revision_preference(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    data = payload.dict()
+    data = payload.model_dump()
     data['user_id'] = current_user.id
     pref = RevisionPreference(**data)
     db.add(pref)
@@ -82,7 +82,7 @@ def update_revision_preference(
     )
     if not pref:
         raise HTTPException(status_code=404, detail="Revision preference not found")
-    for field, value in payload.dict(exclude_unset=True).items():
+    for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(pref, field, value)
     flag_modified(pref, 'preferred_methods')
     db.commit()

@@ -45,7 +45,7 @@ def create_plan_block(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    block = PlanBlock(**payload.dict())
+    block = PlanBlock(**payload.model_dump())
     db.add(block)
     db.commit()
     db.refresh(block)
@@ -62,7 +62,7 @@ def update_plan_block(
     block = db.query(PlanBlock).filter(PlanBlock.id == block_id).first()
     if not block:
         raise HTTPException(status_code=404, detail="Plan block not found")
-    for field, value in payload.dict(exclude_unset=True).items():
+    for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(block, field, value)
     db.commit()
     db.refresh(block)

@@ -38,7 +38,7 @@ def create_plan(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    data = payload.dict()
+    data = payload.model_dump()
     data['user_id'] = current_user.id
     plan = Plan(**data)
     db.add(plan)
@@ -57,7 +57,7 @@ def update_plan(
     plan = db.query(Plan).filter(Plan.id == plan_id).first()
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")
-    for field, value in payload.dict(exclude_unset=True).items():
+    for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(plan, field, value)
     db.commit()
     db.refresh(plan)

@@ -42,7 +42,7 @@ def create_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    user = User(**payload.dict())
+    user = User(**payload.model_dump())
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -59,7 +59,7 @@ def update_user(
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    for field, value in payload.dict(exclude_unset=True).items():
+    for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(user, field, value)
     db.commit()
     db.refresh(user)

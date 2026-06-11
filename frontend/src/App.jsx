@@ -31,14 +31,15 @@ function AuthGuard({ children }) {
 }
 
 function OnboardingGuard({ children }) {
+  const { userId } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
   useEffect(() => {
-    if (pathname !== '/onboarding' && !localStorage.getItem('onboarding_complete')) {
+    if (userId && pathname !== '/onboarding' && !localStorage.getItem(`onboarding_complete_${userId}`)) {
       navigate('/onboarding', { replace: true });
     }
-  }, [navigate, pathname]);
+  }, [navigate, pathname, userId]);
 
   return children;
 }

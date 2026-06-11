@@ -5,6 +5,8 @@ from pydantic import BaseModel, ConfigDict
 
 
 class PlanBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     user_id: int
     start_date: date
     end_date: date
@@ -23,10 +25,10 @@ class PlanResponse(PlanBase):
     id: int
     generated_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
-
 
 class PlanBlockBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     plan_id: int
     topic_id: int
     start_time: datetime
@@ -51,8 +53,6 @@ class PlanBlockUpdate(BaseModel):
 class PlanBlockResponse(PlanBlockBase):
     id: int
 
-    model_config = ConfigDict(from_attributes=True)
-
 
 class GeneratePlanRequest(BaseModel):
     user_id: int
@@ -61,5 +61,3 @@ class GeneratePlanRequest(BaseModel):
 
 class PlanWithBlocksResponse(PlanResponse):
     plan_blocks: List[PlanBlockResponse] = []
-
-    model_config = ConfigDict(from_attributes=True)

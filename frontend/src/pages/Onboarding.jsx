@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@clerk/clerk-react';
 import { API_BASE_URL } from '../api';
 import { useApi } from '../lib/api';
 
@@ -64,6 +65,7 @@ function ProgressBar({ step }) {
 
 export default function Onboarding() {
   const fetchWithAuth = useApi();
+  const { userId } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [error, setError] = useState(null);
@@ -262,7 +264,7 @@ export default function Onboarding() {
         body: JSON.stringify({ user_id: USER_ID, start_date: todayISO() }),
       });
       if (!res.ok) throw new Error('Failed to generate plan');
-      localStorage.setItem('onboarding_complete', 'true');
+      localStorage.setItem(`onboarding_complete_${userId}`, 'true');
       navigate('/weekly-plan');
     } catch (err) {
       setError(err.message);
@@ -271,7 +273,7 @@ export default function Onboarding() {
   };
 
   const finishWithoutPlan = () => {
-    localStorage.setItem('onboarding_complete', 'true');
+    localStorage.setItem(`onboarding_complete_${userId}`, 'true');
     navigate('/');
   };
 

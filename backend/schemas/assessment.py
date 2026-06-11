@@ -5,6 +5,8 @@ from pydantic import BaseModel, ConfigDict
 
 
 class AssessmentBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     course_id: int
     name: str
     type: str
@@ -24,5 +26,3 @@ class AssessmentUpdate(BaseModel):
 
 class AssessmentResponse(AssessmentBase):
     id: int
-
-    model_config = ConfigDict(from_attributes=True)

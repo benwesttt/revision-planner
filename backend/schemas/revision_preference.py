@@ -4,6 +4,8 @@ from pydantic import BaseModel, ConfigDict
 
 
 class RevisionPreferenceBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     user_id: int
     preferred_methods: Optional[List[str]] = None
     min_session_minutes: Optional[int] = None
@@ -26,5 +28,3 @@ class RevisionPreferenceUpdate(BaseModel):
 
 class RevisionPreferenceResponse(RevisionPreferenceBase):
     id: int
-
-    model_config = ConfigDict(from_attributes=True)

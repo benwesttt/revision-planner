@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from auth import get_current_user
 from database import get_db
+from models.plan import PlanBlock
 from models.topic import Topic
 from models.user import User
 from schemas.topic import TopicCreate, TopicResponse, TopicUpdate
@@ -42,7 +43,7 @@ def create_topic(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    topic = Topic(**payload.dict())
+    topic = Topic(**payload.model_dump())
     db.add(topic)
     db.commit()
     db.refresh(topic)
@@ -59,7 +60,7 @@ def update_topic(
     topic = db.query(Topic).filter(Topic.id == topic_id).first()
     if not topic:
         raise HTTPException(status_code=404, detail="Topic not found")
-    for field, value in payload.dict(exclude_unset=True).items():
+    for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(topic, field, value)
     db.commit()
     db.refresh(topic)
@@ -75,5 +76,6 @@ def delete_topic(
     topic = db.query(Topic).filter(Topic.id == topic_id).first()
     if not topic:
         raise HTTPException(status_code=404, detail="Topic not found")
+    db.query(PlanBlock).filter(PlanBlock.topic_id == topic_id).delete(synchronize_session=False)
     db.delete(topic)
     db.commit()

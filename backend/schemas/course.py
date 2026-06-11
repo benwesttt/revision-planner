@@ -4,6 +4,8 @@ from pydantic import BaseModel, ConfigDict
 
 
 class CourseBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     user_id: int
     name: str
     color: str
@@ -20,5 +22,3 @@ class CourseUpdate(BaseModel):
 
 class CourseResponse(CourseBase):
     id: int
-
-    model_config = ConfigDict(from_attributes=True)

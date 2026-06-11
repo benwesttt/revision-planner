@@ -46,7 +46,7 @@ def create_revision_session(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    data = payload.dict()
+    data = payload.model_dump()
     data['user_id'] = current_user.id
     session = RevisionSession(**data)
     db.add(session)
@@ -65,7 +65,7 @@ def update_revision_session(
     session = db.query(RevisionSession).filter(RevisionSession.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Revision session not found")
-    for field, value in payload.dict(exclude_unset=True).items():
+    for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(session, field, value)
     db.commit()
     db.refresh(session)

@@ -45,7 +45,7 @@ def create_topic_resource(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    tr = TopicResource(**payload.dict())
+    tr = TopicResource(**payload.model_dump())
     db.add(tr)
     db.commit()
     db.refresh(tr)

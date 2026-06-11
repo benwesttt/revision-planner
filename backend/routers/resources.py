@@ -42,7 +42,7 @@ def create_resource(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    resource = Resource(**payload.dict())
+    resource = Resource(**payload.model_dump())
     db.add(resource)
     db.commit()
     db.refresh(resource)
@@ -59,7 +59,7 @@ def update_resource(
     resource = db.query(Resource).filter(Resource.id == resource_id).first()
     if not resource:
         raise HTTPException(status_code=404, detail="Resource not found")
-    for field, value in payload.dict(exclude_unset=True).items():
+    for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(resource, field, value)
     db.commit()
     db.refresh(resource)

@@ -42,7 +42,7 @@ def create_calendar_event(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    data = payload.dict()
+    data = payload.model_dump()
     data['user_id'] = current_user.id
     event = CalendarEvent(**data)
     db.add(event)
@@ -61,7 +61,7 @@ def update_calendar_event(
     event = db.query(CalendarEvent).filter(CalendarEvent.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Calendar event not found")
-    for field, value in payload.dict(exclude_unset=True).items():
+    for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(event, field, value)
     db.commit()
     db.refresh(event)
