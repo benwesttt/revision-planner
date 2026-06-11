@@ -20,7 +20,7 @@ app = FastAPI(title="Revision Planner API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://revision-planner-lyart.vercel.app"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
