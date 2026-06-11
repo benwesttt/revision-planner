@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { API_BASE_URL } from '../api';
+import { useApi } from '../lib/api';
 
 const USER_ID = 1;
 
@@ -15,15 +16,13 @@ const TYPES = [
 
 const inputCls = 'bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 w-full';
 
-// Fetch topics for a course, returns array of topic objects
-async function fetchTopicsForCourse(courseId) {
-  const res = await fetch(`${API_BASE_URL}/topics/?course_id=${courseId}`);
+async function fetchTopicsForCourse(courseId, fetchWithAuth) {
+  const res = await fetchWithAuth(`${API_BASE_URL}/topics/?course_id=${courseId}`);
   return res.ok ? res.json() : [];
 }
 
-// Fetch topic-resource links for a resource, returns array of { id, topic_id, resource_id }
-async function fetchLinksForResource(resourceId) {
-  const res = await fetch(`${API_BASE_URL}/topic-resources/?resource_id=${resourceId}`);
+async function fetchLinksForResource(resourceId, fetchWithAuth) {
+  const res = await fetchWithAuth(`${API_BASE_URL}/topic-resources/?resource_id=${resourceId}`);
   return res.ok ? res.json() : [];
 }
 
@@ -53,6 +52,7 @@ function TopicChecklist({ topics, selected, onChange }) {
 }
 
 export default function Resources() {
+  const fetchWithAuth = useApi();
   const [resources, setResources] = useState([]);
   const [courses, setCourses] = useState([]);
   const [courseMap, setCourseMap] = useState({});        // id → { name, color }
@@ -67,8 +67,8 @@ export default function Resources() {
   // Add form
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', type: TYPES[0], course_id: '' });
-  const [formTopicList, setFormTopicList] = useState([]);    // topics for selected course
-  const [formTopicSel, setFormTopicSel] = useState([]);      // selected topic ids
+  const [formTopicList, setFormTopicList] = useState([]);
+  const [formTopicSel, setFormTopicSel] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
   // Inline edit
@@ -88,8 +88,8 @@ export default function Resources() {
       setError(null);
 
       const [resRes, cRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/resources/`),
-        fetch(`${API_BASE_URL}/courses/?user_id=${USER_ID}`),
+        fetchWithAuth(`${API_BASE_URL}/resources/`),
+        fetchWithAuth(`${API_BASE_URL}/courses/?user_id=${USER_ID}`),
       ]);
       if (!resRes.ok) throw new Error('Failed to fetch resources');
       if (!cRes.ok) throw new Error('Failed to fetch courses');
@@ -106,9 +106,8 @@ export default function Resources() {
       allCourses.forEach(c => { cMap[c.id] = { name: c.name, color: c.color }; });
       setCourseMap(cMap);
 
-      // Fetch all topics for all courses
       const topicResults = await Promise.all(
-        allCourses.map(c => fetchTopicsForCourse(c.id))
+        allCourses.map(c => fetchTopicsForCourse(c.id, fetchWithAuth))
       );
       const ctMap = {};
       const tMap = {};
@@ -119,9 +118,8 @@ export default function Resources() {
       setCourseTopics(ctMap);
       setTopicMap(tMap);
 
-      // Fetch topic-resource links for all resources
       const linkResults = await Promise.all(
-        userResources.map(r => fetchLinksForResource(r.id))
+        userResources.map(r => fetchLinksForResource(r.id, fetchWithAuth))
       );
       const rlMap = {};
       userResources.forEach((r, i) => {
@@ -133,7 +131,7 @@ export default function Resources() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchWithAuth]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -145,13 +143,13 @@ export default function Resources() {
       setFormTopicList(existing);
       setFormTopicSel([]);
     } else {
-      fetchTopicsForCourse(form.course_id).then(ts => {
+      fetchTopicsForCourse(form.course_id, fetchWithAuth).then(ts => {
         setCourseTopics(prev => ({ ...prev, [form.course_id]: ts }));
         setFormTopicList(ts);
         setFormTopicSel([]);
       });
     }
-  }, [form.course_id, courseTopics]);
+  }, [form.course_id, courseTopics, fetchWithAuth]);
 
   // When edit-form course changes, load its topics
   useEffect(() => {
@@ -160,32 +158,29 @@ export default function Resources() {
     if (existing) {
       setEditTopicList(existing);
     } else {
-      fetchTopicsForCourse(editForm.course_id).then(ts => {
+      fetchTopicsForCourse(editForm.course_id, fetchWithAuth).then(ts => {
         setCourseTopics(prev => ({ ...prev, [editForm.course_id]: ts }));
         setEditTopicList(ts);
       });
     }
-  }, [editForm.course_id, courseTopics]);
+  }, [editForm.course_id, courseTopics, fetchWithAuth]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim() || !form.course_id) return;
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/resources/`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/resources/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ course_id: Number(form.course_id), name: form.name.trim(), type: form.type }),
       });
       if (!res.ok) throw new Error('Failed to create resource');
       const created = await res.json();
 
-      // Link selected topics
       await Promise.all(
         formTopicSel.map(topicId =>
-          fetch(`${API_BASE_URL}/topic-resources/`, {
+          fetchWithAuth(`${API_BASE_URL}/topic-resources/`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ topic_id: topicId, resource_id: created.id }),
           })
         )
@@ -218,10 +213,8 @@ export default function Resources() {
     if (!editForm.name.trim()) return;
     setSaving(true);
     try {
-      // Update resource fields
-      const res = await fetch(`${API_BASE_URL}/resources/${r.id}`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/resources/${r.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           course_id: Number(editForm.course_id),
           name: editForm.name.trim(),
@@ -230,7 +223,6 @@ export default function Resources() {
       });
       if (!res.ok) throw new Error('Failed to update resource');
 
-      // Reconcile topic links
       const existingLinks = resourceLinks[r.id] ?? [];
       const existingTopicIds = existingLinks.map(l => l.topicId);
       const toRemove = existingLinks.filter(l => !editTopicSel.includes(l.topicId));
@@ -238,12 +230,11 @@ export default function Resources() {
 
       await Promise.all([
         ...toRemove.map(l =>
-          fetch(`${API_BASE_URL}/topic-resources/${l.id}`, { method: 'DELETE' })
+          fetchWithAuth(`${API_BASE_URL}/topic-resources/${l.id}`, { method: 'DELETE' })
         ),
         ...toAdd.map(topicId =>
-          fetch(`${API_BASE_URL}/topic-resources/`, {
+          fetchWithAuth(`${API_BASE_URL}/topic-resources/`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ topic_id: topicId, resource_id: r.id }),
           })
         ),
@@ -261,7 +252,7 @@ export default function Resources() {
   const handleDelete = async (id) => {
     setDeleting(id);
     try {
-      await fetch(`${API_BASE_URL}/resources/${id}`, { method: 'DELETE' });
+      await fetchWithAuth(`${API_BASE_URL}/resources/${id}`, { method: 'DELETE' });
       setResources(prev => prev.filter(r => r.id !== id));
       setPendingDelete(null);
     } catch (err) {
@@ -430,7 +421,6 @@ export default function Resources() {
                 className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3"
               >
                 {isEditing ? (
-                  /* ── Edit mode ── */
                   <form onSubmit={e => handleSave(e, r)} className="flex flex-col gap-3">
                     <label className="flex flex-col gap-1">
                       <span className="text-xs text-gray-400">Name</span>
@@ -502,7 +492,6 @@ export default function Resources() {
                     </div>
                   </form>
                 ) : (
-                  /* ── Display mode ── */
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">

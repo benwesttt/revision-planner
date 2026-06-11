@@ -1,12 +1,14 @@
-from typing import List, Optional
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
+from auth import get_current_user
 from database import get_db
 from models.revision_preference import RevisionPreference
+from models.user import User
 from schemas.revision_preference import (
     RevisionPreferenceCreate,
     RevisionPreferenceResponse,
@@ -18,16 +20,22 @@ router = APIRouter(prefix="/revision-preferences", tags=["revision-preferences"]
 
 @router.get("/", response_model=List[RevisionPreferenceResponse])
 def list_revision_preferences(
-    user_id: Optional[int] = None, db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    q = db.query(RevisionPreference)
-    if user_id is not None:
-        q = q.filter(RevisionPreference.user_id == user_id)
-    return q.all()
+    return (
+        db.query(RevisionPreference)
+        .filter(RevisionPreference.user_id == current_user.id)
+        .all()
+    )
 
 
 @router.get("/{preference_id}", response_model=RevisionPreferenceResponse)
-def get_revision_preference(preference_id: int, db: Session = Depends(get_db)):
+def get_revision_preference(
+    preference_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     pref = (
         db.query(RevisionPreference)
         .filter(RevisionPreference.id == preference_id)
@@ -40,9 +48,13 @@ def get_revision_preference(preference_id: int, db: Session = Depends(get_db)):
 
 @router.post("/", response_model=RevisionPreferenceResponse, status_code=201)
 def create_revision_preference(
-    payload: RevisionPreferenceCreate, db: Session = Depends(get_db)
+    payload: RevisionPreferenceCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    pref = RevisionPreference(**payload.dict())
+    data = payload.dict()
+    data['user_id'] = current_user.id
+    pref = RevisionPreference(**data)
     db.add(pref)
     try:
         db.commit()
@@ -61,6 +73,7 @@ def update_revision_preference(
     preference_id: int,
     payload: RevisionPreferenceUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     pref = (
         db.query(RevisionPreference)
@@ -71,8 +84,6 @@ def update_revision_preference(
         raise HTTPException(status_code=404, detail="Revision preference not found")
     for field, value in payload.dict(exclude_unset=True).items():
         setattr(pref, field, value)
-    # JSON columns require an explicit dirty flag so SQLAlchemy includes
-    # them in the UPDATE even when replacing null with a list or vice versa.
     flag_modified(pref, 'preferred_methods')
     db.commit()
     db.refresh(pref)
@@ -81,19 +92,19 @@ def update_revision_preference(
 
 @router.patch("/current-week", response_model=RevisionPreferenceResponse)
 def set_current_week(
-    user_id: int = Query(...),
-    current_week: str = Query(..., regex="^[AB]$"),
+    current_week: str = Query(..., pattern="^[AB]$"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     pref = (
         db.query(RevisionPreference)
-        .filter(RevisionPreference.user_id == user_id)
+        .filter(RevisionPreference.user_id == current_user.id)
         .first()
     )
     if pref:
         pref.current_week = current_week
     else:
-        pref = RevisionPreference(user_id=user_id, current_week=current_week)
+        pref = RevisionPreference(user_id=current_user.id, current_week=current_week)
         db.add(pref)
     db.commit()
     db.refresh(pref)
@@ -101,7 +112,11 @@ def set_current_week(
 
 
 @router.delete("/{preference_id}", status_code=204)
-def delete_revision_preference(preference_id: int, db: Session = Depends(get_db)):
+def delete_revision_preference(
+    preference_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     pref = (
         db.query(RevisionPreference)
         .filter(RevisionPreference.id == preference_id)

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { API_BASE_URL } from '../api';
+import { useApi } from '../lib/api';
 
 const USER_ID = 1;
 
@@ -36,6 +37,7 @@ function dayWeek(startDateStr, dayOffset, currentWeek) {
 }
 
 export default function WeeklyPlan() {
+  const fetchWithAuth = useApi();
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -47,14 +49,13 @@ export default function WeeklyPlan() {
   const [resourceMap, setResourceMap] = useState({});
   const [calendarEvents, setCalendarEvents] = useState([]);
 
-  // Load metadata: courses, topics, resources, calendar events
   useEffect(() => {
     async function loadMeta() {
       try {
         const [coursesRes, resourcesRes, eventsRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/courses/?user_id=${USER_ID}`),
-          fetch(`${API_BASE_URL}/resources/`),
-          fetch(`${API_BASE_URL}/calendar-events/?user_id=${USER_ID}`),
+          fetchWithAuth(`${API_BASE_URL}/courses/?user_id=${USER_ID}`),
+          fetchWithAuth(`${API_BASE_URL}/resources/`),
+          fetchWithAuth(`${API_BASE_URL}/calendar-events/?user_id=${USER_ID}`),
         ]);
         const courses = coursesRes.ok ? await coursesRes.json() : [];
         const resources = resourcesRes.ok ? await resourcesRes.json() : [];
@@ -70,7 +71,7 @@ export default function WeeklyPlan() {
 
         const topicLists = await Promise.all(
           courses.map(c =>
-            fetch(`${API_BASE_URL}/topics/?course_id=${c.id}`)
+            fetchWithAuth(`${API_BASE_URL}/topics/?course_id=${c.id}`)
               .then(r => (r.ok ? r.json() : []))
           )
         );
@@ -85,18 +86,17 @@ export default function WeeklyPlan() {
       }
     }
     loadMeta();
-  }, []);
+  }, [fetchWithAuth]);
 
-  // Auto-load the most recently generated plan and current_week on mount
   useEffect(() => {
-    fetch(`${API_BASE_URL}/revision-preferences/?user_id=${USER_ID}`)
+    fetchWithAuth(`${API_BASE_URL}/revision-preferences/?user_id=${USER_ID}`)
       .then(r => r.ok ? r.json() : [])
       .then(prefs => { if (prefs.length > 0) setCurrentWeek(prefs[0].current_week ?? 'A'); })
       .catch(() => {});
 
     async function loadLatestPlan() {
       try {
-        const plansRes = await fetch(`${API_BASE_URL}/plans/?user_id=${USER_ID}`);
+        const plansRes = await fetchWithAuth(`${API_BASE_URL}/plans/?user_id=${USER_ID}`);
         if (!plansRes.ok) return;
         const plans = await plansRes.json();
         if (plans.length === 0) return;
@@ -105,7 +105,7 @@ export default function WeeklyPlan() {
           new Date(a.generated_at) > new Date(b.generated_at) ? a : b
         );
 
-        const blocksRes = await fetch(`${API_BASE_URL}/plan-blocks/?plan_id=${latest.id}`);
+        const blocksRes = await fetchWithAuth(`${API_BASE_URL}/plan-blocks/?plan_id=${latest.id}`);
         const blocks = blocksRes.ok ? await blocksRes.json() : [];
 
         setPlan({ ...latest, plan_blocks: blocks });
@@ -116,15 +116,14 @@ export default function WeeklyPlan() {
       }
     }
     loadLatestPlan();
-  }, []);
+  }, [fetchWithAuth]);
 
   const handleGenerate = async () => {
     setGenerating(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/planner/generate`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/planner/generate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: USER_ID, start_date: todayISO() }),
       });
       const data = await res.json();
@@ -141,19 +140,16 @@ export default function WeeklyPlan() {
     ? Array.from({ length: 7 }, (_, i) => addDays(plan.start_date, i))
     : [];
 
-  // Build per-day timeline: revision blocks + calendar events, sorted by time
   const itemsByDay = useMemo(() => {
     if (!plan) return {};
     const groups = {};
 
-    // Seed with revision blocks
     for (const block of plan.plan_blocks) {
       const day = block.start_time.slice(0, 10);
       if (!groups[day]) groups[day] = [];
       groups[day].push({ _type: 'block', _data: block, _sortKey: block.start_time });
     }
 
-    // Interleave calendar events by day-of-week match
     days.forEach((day, i) => {
       if (!groups[day]) groups[day] = [];
       const jsDay = new Date(day + 'T12:00:00').getDay();
@@ -163,7 +159,6 @@ export default function WeeklyPlan() {
         const evJsDay = new Date(ev.start_time).getDay();
         if (evJsDay !== jsDay) continue;
         if (ev.week !== 'both' && ev.week !== wk) continue;
-        // Sort key: plan day date + event's time component
         const timeStr = ev.start_time.slice(11);
         groups[day].push({ _type: 'event', _data: ev, _sortKey: `${day}T${timeStr}` });
       }
@@ -272,7 +267,6 @@ export default function WeeklyPlan() {
                         );
                       }
 
-                      // Revision block
                       const block = _data;
                       const topic = topicMap[block.topic_id];
                       const course = topic ? courseMap[topic.courseId] : null;

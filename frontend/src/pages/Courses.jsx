@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { API_BASE_URL } from '../api';
+import { useApi } from '../lib/api';
 
 const USER_ID = 1;
 
 export default function Courses() {
+  const fetchWithAuth = useApi();
   const [courses, setCourses] = useState([]);
   const [topics, setTopics] = useState({});
   const [loading, setLoading] = useState(true);
@@ -35,14 +37,14 @@ export default function Courses() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`${API_BASE_URL}/courses/?user_id=${USER_ID}`);
+      const res = await fetchWithAuth(`${API_BASE_URL}/courses/?user_id=${USER_ID}`);
       if (!res.ok) throw new Error('Failed to fetch courses');
       const data = await res.json();
       setCourses(data);
       const topicMap = {};
       await Promise.all(
         data.map(async (course) => {
-          const tr = await fetch(`${API_BASE_URL}/topics/?course_id=${course.id}`);
+          const tr = await fetchWithAuth(`${API_BASE_URL}/topics/?course_id=${course.id}`);
           topicMap[course.id] = tr.ok ? await tr.json() : [];
         })
       );
@@ -52,7 +54,7 @@ export default function Courses() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchWithAuth]);
 
   useEffect(() => { fetchCourses(); }, [fetchCourses]);
 
@@ -61,9 +63,8 @@ export default function Courses() {
     if (!courseForm.name.trim()) return;
     setCourseSubmitting(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/courses/`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/courses/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: USER_ID, name: courseForm.name.trim(), color: courseForm.color }),
       });
       if (!res.ok) throw new Error('Failed to create course');
@@ -85,9 +86,8 @@ export default function Courses() {
     try {
       const body = { course_id: courseId, name: form.name.trim() };
       if (form.description.trim()) body.description = form.description.trim();
-      const res = await fetch(`${API_BASE_URL}/topics/`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/topics/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error('Failed to create topic');
@@ -115,9 +115,8 @@ export default function Courses() {
     if (!editCourseName.trim()) return;
     setCourseEditSaving(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/courses/${courseId}`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/courses/${courseId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: editCourseName.trim() }),
       });
       if (!res.ok) throw new Error('Failed to update course');
@@ -133,7 +132,7 @@ export default function Courses() {
   const handleDeleteCourse = async (courseId) => {
     setDeletingCourse(courseId);
     try {
-      await fetch(`${API_BASE_URL}/courses/${courseId}`, { method: 'DELETE' });
+      await fetchWithAuth(`${API_BASE_URL}/courses/${courseId}`, { method: 'DELETE' });
       setCourses(prev => prev.filter(c => c.id !== courseId));
       setPendingDeleteCourse(null);
     } catch (err) {
@@ -159,9 +158,8 @@ export default function Courses() {
       const body = { name: editTopicForm.name.trim() };
       if (editTopicForm.description.trim()) body.description = editTopicForm.description.trim();
       else body.description = null;
-      const res = await fetch(`${API_BASE_URL}/topics/${topic.id}`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/topics/${topic.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error('Failed to update topic');
@@ -181,7 +179,7 @@ export default function Courses() {
   const handleDeleteTopic = async (topicId, courseId) => {
     setDeletingTopic(topicId);
     try {
-      await fetch(`${API_BASE_URL}/topics/${topicId}`, { method: 'DELETE' });
+      await fetchWithAuth(`${API_BASE_URL}/topics/${topicId}`, { method: 'DELETE' });
       setTopics(prev => ({
         ...prev,
         [courseId]: prev[courseId].filter(t => t.id !== topicId),

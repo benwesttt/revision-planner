@@ -1,10 +1,12 @@
-from typing import List, Optional
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from auth import get_current_user
 from database import get_db
 from models.calendar_event import CalendarEvent
+from models.user import User
 from schemas.calendar_event import (
     CalendarEventCreate,
     CalendarEventResponse,
@@ -15,15 +17,19 @@ router = APIRouter(prefix="/calendar-events", tags=["calendar-events"])
 
 
 @router.get("/", response_model=List[CalendarEventResponse])
-def list_calendar_events(user_id: Optional[int] = None, db: Session = Depends(get_db)):
-    q = db.query(CalendarEvent)
-    if user_id is not None:
-        q = q.filter(CalendarEvent.user_id == user_id)
-    return q.all()
+def list_calendar_events(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return db.query(CalendarEvent).filter(CalendarEvent.user_id == current_user.id).all()
 
 
 @router.get("/{event_id}", response_model=CalendarEventResponse)
-def get_calendar_event(event_id: int, db: Session = Depends(get_db)):
+def get_calendar_event(
+    event_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     event = db.query(CalendarEvent).filter(CalendarEvent.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Calendar event not found")
@@ -31,8 +37,14 @@ def get_calendar_event(event_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=CalendarEventResponse, status_code=201)
-def create_calendar_event(payload: CalendarEventCreate, db: Session = Depends(get_db)):
-    event = CalendarEvent(**payload.dict())
+def create_calendar_event(
+    payload: CalendarEventCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    data = payload.dict()
+    data['user_id'] = current_user.id
+    event = CalendarEvent(**data)
     db.add(event)
     db.commit()
     db.refresh(event)
@@ -41,7 +53,10 @@ def create_calendar_event(payload: CalendarEventCreate, db: Session = Depends(ge
 
 @router.put("/{event_id}", response_model=CalendarEventResponse)
 def update_calendar_event(
-    event_id: int, payload: CalendarEventUpdate, db: Session = Depends(get_db)
+    event_id: int,
+    payload: CalendarEventUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     event = db.query(CalendarEvent).filter(CalendarEvent.id == event_id).first()
     if not event:
@@ -54,7 +69,11 @@ def update_calendar_event(
 
 
 @router.delete("/{event_id}", status_code=204)
-def delete_calendar_event(event_id: int, db: Session = Depends(get_db)):
+def delete_calendar_event(
+    event_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     event = db.query(CalendarEvent).filter(CalendarEvent.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Calendar event not found")

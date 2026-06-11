@@ -3,15 +3,21 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from auth import get_current_user
 from database import get_db
 from models.assessment import Assessment
+from models.user import User
 from schemas.assessment import AssessmentCreate, AssessmentResponse, AssessmentUpdate
 
 router = APIRouter(prefix="/assessments", tags=["assessments"])
 
 
 @router.get("/", response_model=List[AssessmentResponse])
-def list_assessments(course_id: Optional[int] = None, db: Session = Depends(get_db)):
+def list_assessments(
+    course_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     q = db.query(Assessment)
     if course_id is not None:
         q = q.filter(Assessment.course_id == course_id)
@@ -19,7 +25,11 @@ def list_assessments(course_id: Optional[int] = None, db: Session = Depends(get_
 
 
 @router.get("/{assessment_id}", response_model=AssessmentResponse)
-def get_assessment(assessment_id: int, db: Session = Depends(get_db)):
+def get_assessment(
+    assessment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
     if not assessment:
         raise HTTPException(status_code=404, detail="Assessment not found")
@@ -27,7 +37,11 @@ def get_assessment(assessment_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=AssessmentResponse, status_code=201)
-def create_assessment(payload: AssessmentCreate, db: Session = Depends(get_db)):
+def create_assessment(
+    payload: AssessmentCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     assessment = Assessment(**payload.dict())
     db.add(assessment)
     db.commit()
@@ -37,7 +51,10 @@ def create_assessment(payload: AssessmentCreate, db: Session = Depends(get_db)):
 
 @router.put("/{assessment_id}", response_model=AssessmentResponse)
 def update_assessment(
-    assessment_id: int, payload: AssessmentUpdate, db: Session = Depends(get_db)
+    assessment_id: int,
+    payload: AssessmentUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
     if not assessment:
@@ -50,7 +67,11 @@ def update_assessment(
 
 
 @router.delete("/{assessment_id}", status_code=204)
-def delete_assessment(assessment_id: int, db: Session = Depends(get_db)):
+def delete_assessment(
+    assessment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
     if not assessment:
         raise HTTPException(status_code=404, detail="Assessment not found")

@@ -1,8 +1,9 @@
-from typing import List, Optional
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from auth import get_current_user
 from database import get_db
 from models.assessment import Assessment
 from models.course import Course
@@ -11,21 +12,26 @@ from models.resource import Resource
 from models.revision_session import RevisionSession
 from models.topic import Topic
 from models.topic_resource import TopicResource
+from models.user import User
 from schemas.course import CourseCreate, CourseResponse, CourseUpdate
 
 router = APIRouter(prefix="/courses", tags=["courses"])
 
 
 @router.get("/", response_model=List[CourseResponse])
-def list_courses(user_id: Optional[int] = None, db: Session = Depends(get_db)):
-    q = db.query(Course)
-    if user_id is not None:
-        q = q.filter(Course.user_id == user_id)
-    return q.all()
+def list_courses(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return db.query(Course).filter(Course.user_id == current_user.id).all()
 
 
 @router.get("/{course_id}", response_model=CourseResponse)
-def get_course(course_id: int, db: Session = Depends(get_db)):
+def get_course(
+    course_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     course = db.query(Course).filter(Course.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -33,8 +39,14 @@ def get_course(course_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=CourseResponse, status_code=201)
-def create_course(payload: CourseCreate, db: Session = Depends(get_db)):
-    course = Course(**payload.dict())
+def create_course(
+    payload: CourseCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    data = payload.dict()
+    data['user_id'] = current_user.id
+    course = Course(**data)
     db.add(course)
     db.commit()
     db.refresh(course)
@@ -42,7 +54,12 @@ def create_course(payload: CourseCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{course_id}", response_model=CourseResponse)
-def update_course(course_id: int, payload: CourseUpdate, db: Session = Depends(get_db)):
+def update_course(
+    course_id: int,
+    payload: CourseUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     course = db.query(Course).filter(Course.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -54,7 +71,11 @@ def update_course(course_id: int, payload: CourseUpdate, db: Session = Depends(g
 
 
 @router.delete("/{course_id}", status_code=204)
-def delete_course(course_id: int, db: Session = Depends(get_db)):
+def delete_course(
+    course_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     course = db.query(Course).filter(Course.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")

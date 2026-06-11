@@ -1,25 +1,31 @@
-from typing import List, Optional
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from auth import get_current_user
 from database import get_db
 from models.plan import Plan
+from models.user import User
 from schemas.plan import PlanCreate, PlanResponse, PlanUpdate
 
 router = APIRouter(prefix="/plans", tags=["plans"])
 
 
 @router.get("/", response_model=List[PlanResponse])
-def list_plans(user_id: Optional[int] = None, db: Session = Depends(get_db)):
-    q = db.query(Plan)
-    if user_id is not None:
-        q = q.filter(Plan.user_id == user_id)
-    return q.all()
+def list_plans(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return db.query(Plan).filter(Plan.user_id == current_user.id).all()
 
 
 @router.get("/{plan_id}", response_model=PlanResponse)
-def get_plan(plan_id: int, db: Session = Depends(get_db)):
+def get_plan(
+    plan_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     plan = db.query(Plan).filter(Plan.id == plan_id).first()
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")
@@ -27,8 +33,14 @@ def get_plan(plan_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=PlanResponse, status_code=201)
-def create_plan(payload: PlanCreate, db: Session = Depends(get_db)):
-    plan = Plan(**payload.dict())
+def create_plan(
+    payload: PlanCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    data = payload.dict()
+    data['user_id'] = current_user.id
+    plan = Plan(**data)
     db.add(plan)
     db.commit()
     db.refresh(plan)
@@ -36,7 +48,12 @@ def create_plan(payload: PlanCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{plan_id}", response_model=PlanResponse)
-def update_plan(plan_id: int, payload: PlanUpdate, db: Session = Depends(get_db)):
+def update_plan(
+    plan_id: int,
+    payload: PlanUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     plan = db.query(Plan).filter(Plan.id == plan_id).first()
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")
@@ -48,7 +65,11 @@ def update_plan(plan_id: int, payload: PlanUpdate, db: Session = Depends(get_db)
 
 
 @router.delete("/{plan_id}", status_code=204)
-def delete_plan(plan_id: int, db: Session = Depends(get_db)):
+def delete_plan(
+    plan_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     plan = db.query(Plan).filter(Plan.id == plan_id).first()
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")

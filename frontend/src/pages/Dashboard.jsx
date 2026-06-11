@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { API_BASE_URL } from '../api';
+import { useApi } from '../lib/api';
 
 const USER_ID = 1;
 
@@ -45,6 +46,7 @@ function Stars({ value }) {
 }
 
 export default function Dashboard() {
+  const fetchWithAuth = useApi();
   const [todayBlocks, setTodayBlocks] = useState([]);
   const [recentSessions, setRecentSessions] = useState([]);
   const [todayLoggedCount, setTodayLoggedCount] = useState(0);
@@ -61,7 +63,7 @@ export default function Dashboard() {
     async function load() {
       try {
         // Fetch metadata maps (courses + topics)
-        const coursesRes = await fetch(`${API_BASE_URL}/courses/?user_id=${USER_ID}`);
+        const coursesRes = await fetchWithAuth(`${API_BASE_URL}/courses/?user_id=${USER_ID}`);
         const courses = coursesRes.ok ? await coursesRes.json() : [];
 
         const cMap = {};
@@ -70,7 +72,7 @@ export default function Dashboard() {
 
         const topicLists = await Promise.all(
           courses.map(c =>
-            fetch(`${API_BASE_URL}/topics/?course_id=${c.id}`)
+            fetchWithAuth(`${API_BASE_URL}/topics/?course_id=${c.id}`)
               .then(r => (r.ok ? r.json() : []))
           )
         );
@@ -79,7 +81,7 @@ export default function Dashboard() {
         setTopicMap(tMap);
 
         // Fetch plans, pick the most recent
-        const plansRes = await fetch(`${API_BASE_URL}/plans/?user_id=${USER_ID}`);
+        const plansRes = await fetchWithAuth(`${API_BASE_URL}/plans/?user_id=${USER_ID}`);
         const plans = plansRes.ok ? await plansRes.json() : [];
 
         if (plans.length === 0) {
@@ -93,7 +95,7 @@ export default function Dashboard() {
         setHasPlan(true);
 
         // Fetch blocks for that plan and filter to today
-        const blocksRes = await fetch(`${API_BASE_URL}/plan-blocks/?plan_id=${latest.id}`);
+        const blocksRes = await fetchWithAuth(`${API_BASE_URL}/plan-blocks/?plan_id=${latest.id}`);
         const blocks = blocksRes.ok ? await blocksRes.json() : [];
         const today = todayISO();
         const filtered = blocks
@@ -102,7 +104,7 @@ export default function Dashboard() {
         setTodayBlocks(filtered);
 
         // Fetch revision sessions — split into today's count and last-3 for display
-        const sessRes = await fetch(`${API_BASE_URL}/revision-sessions/?user_id=${USER_ID}`);
+        const sessRes = await fetchWithAuth(`${API_BASE_URL}/revision-sessions/?user_id=${USER_ID}`);
         const sessions = sessRes.ok ? await sessRes.json() : [];
         const todayStr = todayISO();
         setTodayLoggedCount(
@@ -114,7 +116,7 @@ export default function Dashboard() {
       }
     }
     load();
-  }, []);
+  }, [fetchWithAuth]);
 
   const stats = useMemo(() => {
     const courseIds = new Set(
@@ -132,9 +134,8 @@ export default function Dashboard() {
       (new Date(block.end_time) - new Date(block.start_time)) / 60000
     );
     try {
-      const res = await fetch(`${API_BASE_URL}/revision-sessions/`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/revision-sessions/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: USER_ID,
           topic_id: block.topic_id,

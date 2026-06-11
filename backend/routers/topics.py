@@ -3,15 +3,21 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from auth import get_current_user
 from database import get_db
 from models.topic import Topic
+from models.user import User
 from schemas.topic import TopicCreate, TopicResponse, TopicUpdate
 
 router = APIRouter(prefix="/topics", tags=["topics"])
 
 
 @router.get("/", response_model=List[TopicResponse])
-def list_topics(course_id: Optional[int] = None, db: Session = Depends(get_db)):
+def list_topics(
+    course_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     q = db.query(Topic)
     if course_id is not None:
         q = q.filter(Topic.course_id == course_id)
@@ -19,7 +25,11 @@ def list_topics(course_id: Optional[int] = None, db: Session = Depends(get_db)):
 
 
 @router.get("/{topic_id}", response_model=TopicResponse)
-def get_topic(topic_id: int, db: Session = Depends(get_db)):
+def get_topic(
+    topic_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     topic = db.query(Topic).filter(Topic.id == topic_id).first()
     if not topic:
         raise HTTPException(status_code=404, detail="Topic not found")
@@ -27,7 +37,11 @@ def get_topic(topic_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=TopicResponse, status_code=201)
-def create_topic(payload: TopicCreate, db: Session = Depends(get_db)):
+def create_topic(
+    payload: TopicCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     topic = Topic(**payload.dict())
     db.add(topic)
     db.commit()
@@ -36,7 +50,12 @@ def create_topic(payload: TopicCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{topic_id}", response_model=TopicResponse)
-def update_topic(topic_id: int, payload: TopicUpdate, db: Session = Depends(get_db)):
+def update_topic(
+    topic_id: int,
+    payload: TopicUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     topic = db.query(Topic).filter(Topic.id == topic_id).first()
     if not topic:
         raise HTTPException(status_code=404, detail="Topic not found")
@@ -48,7 +67,11 @@ def update_topic(topic_id: int, payload: TopicUpdate, db: Session = Depends(get_
 
 
 @router.delete("/{topic_id}", status_code=204)
-def delete_topic(topic_id: int, db: Session = Depends(get_db)):
+def delete_topic(
+    topic_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     topic = db.query(Topic).filter(Topic.id == topic_id).first()
     if not topic:
         raise HTTPException(status_code=404, detail="Topic not found")

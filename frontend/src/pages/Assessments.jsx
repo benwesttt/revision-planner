@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { API_BASE_URL } from '../api';
+import { useApi } from '../lib/api';
 
 const USER_ID = 1;
 
@@ -29,6 +30,7 @@ function toDateInputValue(isoStr) {
 }
 
 export default function Assessments() {
+  const fetchWithAuth = useApi();
   const [assessments, setAssessments] = useState([]);
   const [courses, setCourses] = useState([]);
   const [courseMap, setCourseMap] = useState({});
@@ -51,8 +53,8 @@ export default function Assessments() {
       setLoading(true);
       setError(null);
       const [aRes, cRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/assessments/`),
-        fetch(`${API_BASE_URL}/courses/?user_id=${USER_ID}`),
+        fetchWithAuth(`${API_BASE_URL}/assessments/`),
+        fetchWithAuth(`${API_BASE_URL}/courses/?user_id=${USER_ID}`),
       ]);
       if (!aRes.ok) throw new Error('Failed to fetch assessments');
       if (!cRes.ok) throw new Error('Failed to fetch courses');
@@ -75,7 +77,7 @@ export default function Assessments() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchWithAuth]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -90,9 +92,8 @@ export default function Assessments() {
         type: form.type,
         due_date: form.due_date ? new Date(form.due_date).toISOString() : null,
       };
-      const res = await fetch(`${API_BASE_URL}/assessments/`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/assessments/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error('Failed to create assessment');
@@ -109,7 +110,7 @@ export default function Assessments() {
   const handleDelete = async (id) => {
     setDeleting(id);
     try {
-      await fetch(`${API_BASE_URL}/assessments/${id}`, { method: 'DELETE' });
+      await fetchWithAuth(`${API_BASE_URL}/assessments/${id}`, { method: 'DELETE' });
       setAssessments(prev => prev.filter(a => a.id !== id));
     } catch (err) {
       setError(err.message);
@@ -146,9 +147,8 @@ export default function Assessments() {
         type: editForm.type,
         due_date: editForm.due_date ? new Date(editForm.due_date).toISOString() : null,
       };
-      const res = await fetch(`${API_BASE_URL}/assessments/${id}`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/assessments/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error('Failed to update assessment');
@@ -290,7 +290,6 @@ export default function Assessments() {
                 className={`bg-gray-800 border ${border} rounded-xl px-4 py-3`}
               >
                 {isEditing ? (
-                  /* ── Edit mode ── */
                   <form onSubmit={e => handleSave(e, a.id)} className="flex flex-col gap-3">
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <label className="flex flex-col gap-1">
@@ -361,7 +360,6 @@ export default function Assessments() {
                     </div>
                   </form>
                 ) : (
-                  /* ── Display mode ── */
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">

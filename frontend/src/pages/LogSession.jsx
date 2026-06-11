@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { API_BASE_URL } from '../api';
+import { useApi } from '../lib/api';
 
 const USER_ID = 1;
 
@@ -36,6 +37,7 @@ function Stars({ value }) {
 }
 
 export default function LogSession() {
+  const fetchWithAuth = useApi();
   const [courses, setCourses] = useState([]);
   const [topics, setTopics] = useState([]);
   const [sessions, setSessions] = useState([]);
@@ -57,17 +59,17 @@ export default function LogSession() {
   const [error, setError] = useState(null);
 
   const fetchSessions = useCallback(async () => {
-    const res = await fetch(`${API_BASE_URL}/revision-sessions/?user_id=${USER_ID}`);
+    const res = await fetchWithAuth(`${API_BASE_URL}/revision-sessions/?user_id=${USER_ID}`);
     if (res.ok) {
       const data = await res.json();
       setSessions(data.slice().reverse());
     }
-  }, []);
+  }, [fetchWithAuth]);
 
   // Load courses + build lookup maps on mount
   useEffect(() => {
     async function init() {
-      const res = await fetch(`${API_BASE_URL}/courses/?user_id=${USER_ID}`);
+      const res = await fetchWithAuth(`${API_BASE_URL}/courses/?user_id=${USER_ID}`);
       if (!res.ok) return;
       const data = await res.json();
       setCourses(data);
@@ -78,7 +80,7 @@ export default function LogSession() {
 
       const topicLists = await Promise.all(
         data.map(c =>
-          fetch(`${API_BASE_URL}/topics/?course_id=${c.id}`)
+          fetchWithAuth(`${API_BASE_URL}/topics/?course_id=${c.id}`)
             .then(r => (r.ok ? r.json() : []))
         )
       );
@@ -88,7 +90,7 @@ export default function LogSession() {
     }
     init();
     fetchSessions();
-  }, [fetchSessions]);
+  }, [fetchWithAuth, fetchSessions]);
 
   // Refresh topics dropdown when course changes
   useEffect(() => {
@@ -97,13 +99,13 @@ export default function LogSession() {
       setForm(f => ({ ...f, topic_id: '' }));
       return;
     }
-    fetch(`${API_BASE_URL}/topics/?course_id=${form.course_id}`)
+    fetchWithAuth(`${API_BASE_URL}/topics/?course_id=${form.course_id}`)
       .then(r => (r.ok ? r.json() : []))
       .then(data => {
         setTopics(data);
         setForm(f => ({ ...f, topic_id: data[0]?.id ?? '' }));
       });
-  }, [form.course_id]);
+  }, [form.course_id, fetchWithAuth]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -112,9 +114,8 @@ export default function LogSession() {
     setError(null);
     setSuccess(false);
     try {
-      const res = await fetch(`${API_BASE_URL}/revision-sessions/`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/revision-sessions/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: USER_ID,
           topic_id: Number(form.topic_id),

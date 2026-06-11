@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { API_BASE_URL } from '../api';
+import { useApi } from '../lib/api';
 
 const USER_ID = 1;
 
@@ -46,13 +47,12 @@ function WeekToggle({ value, onChange, label }) {
 }
 
 export default function Timetable() {
+  const fetchWithAuth = useApi();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Which week the user is viewing/editing
   const [viewWeek, setViewWeek] = useState('A');
-  // Which week the planner treats as current
   const [currentWeek, setCurrentWeek] = useState('A');
   const [savingWeek, setSavingWeek] = useState(false);
 
@@ -69,7 +69,7 @@ export default function Timetable() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`${API_BASE_URL}/calendar-events/?user_id=${USER_ID}`);
+      const res = await fetchWithAuth(`${API_BASE_URL}/calendar-events/?user_id=${USER_ID}`);
       if (!res.ok) throw new Error('Failed to fetch events');
       setEvents(await res.json());
     } catch (err) {
@@ -77,12 +77,11 @@ export default function Timetable() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchWithAuth]);
 
-  // Load events and the user's current_week preference on mount
   useEffect(() => {
     fetchEvents();
-    fetch(`${API_BASE_URL}/revision-preferences/?user_id=${USER_ID}`)
+    fetchWithAuth(`${API_BASE_URL}/revision-preferences/?user_id=${USER_ID}`)
       .then(r => r.ok ? r.json() : [])
       .then(prefs => {
         if (prefs.length > 0) {
@@ -90,9 +89,8 @@ export default function Timetable() {
         }
       })
       .catch(() => {});
-  }, [fetchEvents]);
+  }, [fetchEvents, fetchWithAuth]);
 
-  // Keep the form's default week in sync with the view week
   useEffect(() => {
     setForm(f => ({ ...f, week: viewWeek }));
   }, [viewWeek]);
@@ -100,7 +98,7 @@ export default function Timetable() {
   const handleSetCurrentWeek = async (week) => {
     setSavingWeek(true);
     try {
-      const res = await fetch(
+      const res = await fetchWithAuth(
         `${API_BASE_URL}/revision-preferences/current-week?user_id=${USER_ID}&current_week=${week}`,
         { method: 'PATCH' }
       );
@@ -118,9 +116,8 @@ export default function Timetable() {
     if (!form.title.trim() || !form.start_time || !form.end_time) return;
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/calendar-events/`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/calendar-events/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: USER_ID,
           title: form.title.trim(),
@@ -161,9 +158,8 @@ export default function Timetable() {
     if (!editForm.title.trim()) return;
     setSaving(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/calendar-events/${id}`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/calendar-events/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: editForm.title.trim(),
           start_time: editForm.start_time,
@@ -185,7 +181,7 @@ export default function Timetable() {
   const handleDelete = async (id) => {
     setDeleting(id);
     try {
-      await fetch(`${API_BASE_URL}/calendar-events/${id}`, { method: 'DELETE' });
+      await fetchWithAuth(`${API_BASE_URL}/calendar-events/${id}`, { method: 'DELETE' });
       setEvents(prev => prev.filter(e => e.id !== id));
     } catch (err) {
       setError(err.message);
@@ -194,7 +190,6 @@ export default function Timetable() {
     }
   };
 
-  // Filter events to those visible in the current view week
   const visibleEvents = events.filter(ev => ev.week === viewWeek || ev.week === 'both');
 
   const byDay = {};
@@ -291,7 +286,6 @@ export default function Timetable() {
             </label>
           </div>
 
-          {/* Week selector */}
           <div className="flex flex-col gap-1">
             <span className="text-xs text-gray-400">Week</span>
             <div className="flex gap-2">

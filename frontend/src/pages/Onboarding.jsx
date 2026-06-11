@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../api';
+import { useApi } from '../lib/api';
 
 const USER_ID = 1;
 const TOTAL_STEPS = 6;
@@ -33,7 +34,7 @@ function todayISO() {
 
 function nextDateForDay(dayName, timeStr) {
   const idx = DAYS_OF_WEEK.indexOf(dayName);
-  const jsDay = idx === 6 ? 0 : idx + 1; // Mon=1…Sun=0
+  const jsDay = idx === 6 ? 0 : idx + 1;
   const today = new Date();
   let daysUntil = jsDay - today.getDay();
   if (daysUntil <= 0) daysUntil += 7;
@@ -62,6 +63,7 @@ function ProgressBar({ step }) {
 }
 
 export default function Onboarding() {
+  const fetchWithAuth = useApi();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [error, setError] = useState(null);
@@ -106,9 +108,8 @@ export default function Onboarding() {
     setError(null);
     try {
       const color = COURSE_COLORS[courses.length % COURSE_COLORS.length];
-      const res = await fetch(`${API_BASE_URL}/courses/`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/courses/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: USER_ID, name, color }),
       });
       if (!res.ok) throw new Error('Failed to add course');
@@ -123,7 +124,7 @@ export default function Onboarding() {
   };
 
   const handleDeleteCourse = async (id) => {
-    await fetch(`${API_BASE_URL}/courses/${id}`, { method: 'DELETE' }).catch(() => {});
+    await fetchWithAuth(`${API_BASE_URL}/courses/${id}`, { method: 'DELETE' }).catch(() => {});
     setCourses(prev => prev.filter(c => c.id !== id));
     setCourseTopics(prev => { const n = { ...prev }; delete n[id]; return n; });
   };
@@ -135,9 +136,8 @@ export default function Onboarding() {
     setAddingTopic(courseId);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/topics/`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/topics/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ course_id: courseId, name }),
       });
       if (!res.ok) throw new Error('Failed to add topic');
@@ -152,7 +152,7 @@ export default function Onboarding() {
   };
 
   const handleDeleteTopic = async (topicId, courseId) => {
-    await fetch(`${API_BASE_URL}/topics/${topicId}`, { method: 'DELETE' }).catch(() => {});
+    await fetchWithAuth(`${API_BASE_URL}/topics/${topicId}`, { method: 'DELETE' }).catch(() => {});
     setCourseTopics(prev => ({
       ...prev,
       [courseId]: (prev[courseId] || []).filter(t => t.id !== topicId),
@@ -173,9 +173,8 @@ export default function Onboarding() {
 
       console.log('POST /revision-preferences/ payload:', JSON.stringify(payload, null, 2));
 
-      const postRes = await fetch(`${API_BASE_URL}/revision-preferences/`, {
+      const postRes = await fetchWithAuth(`${API_BASE_URL}/revision-preferences/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
@@ -185,8 +184,7 @@ export default function Onboarding() {
         const postBody = await postRes.text();
         console.error('POST /revision-preferences/ error body:', postBody);
 
-        // Preference already exists — look up the correct record ID then PUT
-        const listRes = await fetch(`${API_BASE_URL}/revision-preferences/?user_id=${USER_ID}`);
+        const listRes = await fetchWithAuth(`${API_BASE_URL}/revision-preferences/?user_id=${USER_ID}`);
         if (!listRes.ok) throw new Error('Failed to fetch existing preferences');
         const prefs = await listRes.json();
         if (!prefs.length) throw new Error('No existing preference record found');
@@ -194,9 +192,8 @@ export default function Onboarding() {
 
         console.log(`PUT /revision-preferences/${prefId} payload:`, JSON.stringify(payload, null, 2));
 
-        const putRes = await fetch(`${API_BASE_URL}/revision-preferences/${prefId}`, {
+        const putRes = await fetchWithAuth(`${API_BASE_URL}/revision-preferences/${prefId}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
 
@@ -228,9 +225,8 @@ export default function Onboarding() {
     try {
       const start = nextDateForDay(eventForm.day, eventForm.start_time);
       const end   = nextDateForDay(eventForm.day, eventForm.end_time);
-      const res = await fetch(`${API_BASE_URL}/calendar-events/`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/calendar-events/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: USER_ID,
           title: eventForm.title.trim(),
@@ -253,7 +249,7 @@ export default function Onboarding() {
   };
 
   const handleDeleteEvent = async (id) => {
-    await fetch(`${API_BASE_URL}/calendar-events/${id}`, { method: 'DELETE' }).catch(() => {});
+    await fetchWithAuth(`${API_BASE_URL}/calendar-events/${id}`, { method: 'DELETE' }).catch(() => {});
     setEvents(prev => prev.filter(e => e.id !== id));
   };
 
@@ -261,9 +257,8 @@ export default function Onboarding() {
     setGenerating(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/planner/generate`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/planner/generate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: USER_ID, start_date: todayISO() }),
       });
       if (!res.ok) throw new Error('Failed to generate plan');

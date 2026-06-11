@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@clerk/clerk-react';
 import TopBar from './components/TopBar';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
@@ -10,6 +11,24 @@ import Timetable from './pages/Timetable';
 import Assessments from './pages/Assessments';
 import Resources from './pages/Resources';
 import Onboarding from './pages/Onboarding';
+import SignInPage from './pages/SignInPage';
+import SignUpPage from './pages/SignUpPage';
+
+function AuthGuard({ children }) {
+  const { isSignedIn, isLoaded } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      navigate('/sign-in', { replace: true });
+    }
+  }, [isLoaded, isSignedIn, navigate]);
+
+  if (!isLoaded) return <div className="min-h-screen bg-gray-950" />;
+  if (!isSignedIn) return null;
+
+  return children;
+}
 
 function OnboardingGuard({ children }) {
   const navigate = useNavigate();
@@ -51,12 +70,23 @@ function AppShell() {
 export default function App() {
   return (
     <BrowserRouter>
-      <OnboardingGuard>
-        <Routes>
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/*" element={<AppShell />} />
-        </Routes>
-      </OnboardingGuard>
+      <Routes>
+        <Route path="/sign-in/*" element={<SignInPage />} />
+        <Route path="/sign-up/*" element={<SignUpPage />} />
+        <Route
+          path="/*"
+          element={
+            <AuthGuard>
+              <OnboardingGuard>
+                <Routes>
+                  <Route path="/onboarding" element={<Onboarding />} />
+                  <Route path="/*" element={<AppShell />} />
+                </Routes>
+              </OnboardingGuard>
+            </AuthGuard>
+          }
+        />
+      </Routes>
     </BrowserRouter>
   );
 }
