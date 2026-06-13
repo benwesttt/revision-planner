@@ -20,7 +20,7 @@ function AuthGuard({ children }) {
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
-      navigate('/sign-in', { replace: true });
+      navigate('/sign-up', { replace: true });
     }
   }, [isLoaded, isSignedIn, navigate]);
 
