@@ -29,6 +29,12 @@ function formatRelative(isoStr) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+function daysUntil(isoStr) {
+  if (!isoStr) return null;
+  const diff = new Date(isoStr).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0);
+  return Math.ceil(diff / 86400000);
+}
+
 function Stars({ value }) {
   return (
     <span className="flex gap-0.5">
@@ -52,20 +58,22 @@ export default function Dashboard() {
   const [todayLoggedCount, setTodayLoggedCount] = useState(0);
   const [courseMap, setCourseMap] = useState({});
   const [topicMap, setTopicMap] = useState({});
-  const [hasPlan, setHasPlan] = useState(null); // null = loading
+  const [hasPlan, setHasPlan] = useState(null);
   const [error, setError] = useState(null);
 
   const [loggingBlockId, setLoggingBlockId] = useState(null);
   const [logConfidence, setLogConfidence] = useState(3);
   const [loggedBlockIds, setLoggedBlockIds] = useState(new Set());
 
+  const [neglectedTopics, setNeglectedTopics] = useState([]);
+  const [upcomingAssessments, setUpcomingAssessments] = useState([]);
+
   useEffect(() => {
     async function load() {
       try {
-        // Fetch metadata maps (courses + topics)
+        // Courses + topics
         const coursesRes = await fetchWithAuth(`${API_BASE_URL}/courses/?user_id=${USER_ID}`);
         const courses = coursesRes.ok ? await coursesRes.json() : [];
-
         const cMap = {};
         courses.forEach(c => { cMap[c.id] = { name: c.name, color: c.color }; });
         setCourseMap(cMap);
@@ -76,11 +84,46 @@ export default function Dashboard() {
               .then(r => (r.ok ? r.json() : []))
           )
         );
+        const allTopics = topicLists.flat();
         const tMap = {};
-        topicLists.flat().forEach(t => { tMap[t.id] = { name: t.name, courseId: t.course_id }; });
+        allTopics.forEach(t => { tMap[t.id] = { name: t.name, courseId: t.course_id }; });
         setTopicMap(tMap);
 
-        // Fetch plans, pick the most recent
+        // Revision sessions
+        const sessRes = await fetchWithAuth(`${API_BASE_URL}/revision-sessions/?user_id=${USER_ID}`);
+        const sessions = sessRes.ok ? await sessRes.json() : [];
+        const todayStr = todayISO();
+        setTodayLoggedCount(sessions.filter(s => s.created_at.slice(0, 10) === todayStr).length);
+        setRecentSessions(sessions.slice(-3).reverse());
+
+        // Compute neglected topics
+        const latestByTopic = {};
+        sessions.forEach(s => {
+          if (!latestByTopic[s.topic_id] || new Date(s.created_at) > new Date(latestByTopic[s.topic_id])) {
+            latestByTopic[s.topic_id] = s.created_at;
+          }
+        });
+        const neglected = allTopics
+          .map(t => ({ id: t.id, name: t.name, courseId: t.course_id, lastRevised: latestByTopic[t.id] ?? null }))
+          .sort((a, b) => {
+            if (!a.lastRevised && !b.lastRevised) return 0;
+            if (!a.lastRevised) return -1;
+            if (!b.lastRevised) return 1;
+            return new Date(a.lastRevised) - new Date(b.lastRevised);
+          })
+          .slice(0, 5);
+        setNeglectedTopics(neglected);
+
+        // Upcoming assessments
+        const assessRes = await fetchWithAuth(`${API_BASE_URL}/assessments/`);
+        const assessments = assessRes.ok ? await assessRes.json() : [];
+        const upcoming = assessments
+          .filter(a => a.due_date)
+          .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+          .slice(0, 5);
+        setUpcomingAssessments(upcoming);
+
+        // Plans
         const plansRes = await fetchWithAuth(`${API_BASE_URL}/plans/?user_id=${USER_ID}`);
         const plans = plansRes.ok ? await plansRes.json() : [];
 
@@ -94,7 +137,6 @@ export default function Dashboard() {
         );
         setHasPlan(true);
 
-        // Fetch blocks for that plan and filter to today
         const blocksRes = await fetchWithAuth(`${API_BASE_URL}/plan-blocks/?plan_id=${latest.id}`);
         const blocks = blocksRes.ok ? await blocksRes.json() : [];
         const today = todayISO();
@@ -102,15 +144,6 @@ export default function Dashboard() {
           .filter(b => b.start_time.slice(0, 10) === today)
           .sort((a, b) => a.start_time.localeCompare(b.start_time));
         setTodayBlocks(filtered);
-
-        // Fetch revision sessions — split into today's count and last-3 for display
-        const sessRes = await fetchWithAuth(`${API_BASE_URL}/revision-sessions/?user_id=${USER_ID}`);
-        const sessions = sessRes.ok ? await sessRes.json() : [];
-        const todayStr = todayISO();
-        setTodayLoggedCount(
-          sessions.filter(s => s.created_at.slice(0, 10) === todayStr).length
-        );
-        setRecentSessions(sessions.slice(-3).reverse());
       } catch (err) {
         setError(err.message);
       }
@@ -178,7 +211,7 @@ export default function Dashboard() {
 
       {/* No plan state */}
       {!hasPlan && (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
+        <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center mb-4">
             <svg className="w-7 h-7 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
@@ -368,6 +401,88 @@ export default function Dashboard() {
             </div>
           )}
         </>
+      )}
+
+      {/* Most Neglected Topics */}
+      {neglectedTopics.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+            Most Neglected Topics
+          </h2>
+          <div className="flex flex-col gap-2">
+            {neglectedTopics.map(t => {
+              const course = courseMap[t.courseId];
+              const daysAgoVal = t.lastRevised
+                ? Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(t.lastRevised).setHours(0, 0, 0, 0)) / 86400000)
+                : null;
+              const lastRevisedLabel = daysAgoVal === null
+                ? 'Never revised'
+                : daysAgoVal === 0
+                ? 'Today'
+                : daysAgoVal === 1
+                ? 'Yesterday'
+                : `${daysAgoVal} days ago`;
+              return (
+                <div
+                  key={t.id}
+                  className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 flex items-center justify-between gap-4"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      {course && (
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: course.color }} />
+                      )}
+                      <span className="text-sm font-medium text-white truncate">{t.name}</span>
+                    </div>
+                    <span className="text-xs text-gray-500">{course?.name ?? ''}</span>
+                  </div>
+                  <span className={`text-xs font-medium shrink-0 ${daysAgoVal === null ? 'text-amber-400' : 'text-gray-400'}`}>
+                    {lastRevisedLabel}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Upcoming Assessments */}
+      {upcomingAssessments.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+            Upcoming Assessments
+          </h2>
+          <div className="flex flex-col gap-2">
+            {upcomingAssessments.map(a => {
+              const days = daysUntil(a.due_date);
+              const borderCls = days < 0 ? 'border-red-700' : days <= 7 ? 'border-red-700' : days <= 14 ? 'border-amber-700' : 'border-green-800';
+              const labelCls = days < 0 ? 'text-red-400' : days <= 7 ? 'text-red-400' : days <= 14 ? 'text-amber-400' : 'text-green-400';
+              const dueLabel = days < 0
+                ? 'Overdue'
+                : days === 0
+                ? 'Due today'
+                : days === 1
+                ? 'Due tomorrow'
+                : `${days} days away`;
+              const course = courseMap[a.course_id];
+              return (
+                <div
+                  key={a.id}
+                  className={`bg-gray-800 border ${borderCls} rounded-xl px-4 py-3 flex items-center justify-between gap-4`}
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                      <span className="text-sm font-medium text-white truncate">{a.name}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-700 text-gray-300 capitalize">{a.type}</span>
+                    </div>
+                    <span className="text-xs text-gray-500">{course?.name ?? ''}</span>
+                  </div>
+                  <span className={`text-xs font-medium shrink-0 ${labelCls}`}>{dueLabel}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
     </div>
   );
