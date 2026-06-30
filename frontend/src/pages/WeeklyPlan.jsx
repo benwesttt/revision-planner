@@ -316,13 +316,13 @@ export default function WeeklyPlan() {
                               <div className="flex flex-col gap-0.5 mt-1">
                                 {whyText && (
                                   <p className="text-xs">
-                                    <span className="font-semibold text-gray-500">Why </span>
+                                    <span className="font-semibold text-indigo-400">Why: </span>
                                     <span className="text-gray-500">{whyText}</span>
                                   </p>
                                 )}
                                 {howText && (
                                   <p className="text-xs">
-                                    <span className="font-semibold text-indigo-400">How </span>
+                                    <span className="font-semibold text-indigo-400">How: </span>
                                     <span className="text-gray-400">{howText}</span>
                                   </p>
                                 )}
