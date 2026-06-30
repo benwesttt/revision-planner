@@ -300,9 +300,29 @@ export default function Dashboard() {
                         {topic?.name ?? `Topic ${block.topic_id}`}
                       </span>
                     </div>
-                    {block.reason && (
-                      <p className="text-xs text-gray-500 mt-0.5">{block.reason}</p>
-                    )}
+                    {block.reason && (() => {
+                      const howIdx = block.reason.indexOf(' How:');
+                      const whyBlock = howIdx === -1 ? block.reason : block.reason.slice(0, howIdx);
+                      const howText = howIdx === -1 ? null : block.reason.slice(howIdx + ' How:'.length).trim();
+                      const chosenIdx = whyBlock.indexOf('Chosen because: ');
+                      const whyText = chosenIdx === -1 ? whyBlock : whyBlock.slice(chosenIdx + 'Chosen because: '.length);
+                      return (
+                        <div className="flex flex-col gap-0.5 mt-1">
+                          {whyText && (
+                            <p className="text-xs">
+                              <span className="font-semibold text-gray-500">Why </span>
+                              <span className="text-gray-500">{whyText}</span>
+                            </p>
+                          )}
+                          {howText && (
+                            <p className="text-xs">
+                              <span className="font-semibold text-indigo-400">How </span>
+                              <span className="text-gray-400">{howText}</span>
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
                     {!loggingBlockId || loggingBlockId !== block.id ? (
                       <div className="flex justify-end mt-1">
                         {loggedBlockIds.has(block.id) ? (

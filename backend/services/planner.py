@@ -22,13 +22,32 @@ BUFFER_MINUTES = 10
 MAX_REVISION_HOURS_PER_DAY = 6
 DEFAULT_METHODS = ["active recall", "flashcards", "notes"]
 
-_METHOD_INSTRUCTIONS: dict = {
-    "practice questions": "How: Spend 70% of the session answering questions, 20% marking and checking answers, 10% writing an error list of mistakes to revisit.",
-    "past papers":        "How: Attempt the questions under timed conditions, then spend the last 15 minutes reviewing the mark scheme and noting where you lost marks.",
-    "flashcards":         "How: Go through all cards once, set aside ones you got wrong, then repeat the wrong ones until you get them all correct.",
-    "active recall":      "How: Close your notes and write down everything you can remember about the topic from memory, then check against your notes and fill the gaps.",
-    "review notes":       "How: Read through your notes actively — summarise each section in your own words in the margin or on a separate sheet as you go.",
-}
+def _method_instruction(method: str, duration_minutes: int) -> Optional[str]:
+    m = method.lower()
+    d = duration_minutes
+    if m == "practice questions":
+        answering = round(d * 0.70)
+        marking   = round(d * 0.20)
+        errors    = d - answering - marking
+        return (
+            f"How: Spend {answering} minutes answering questions, "
+            f"{marking} minutes marking and checking answers, "
+            f"{errors} minutes writing an error list of mistakes to revisit."
+        )
+    if m == "past papers":
+        reviewing = round(d * 0.30)
+        attempting = d - reviewing
+        return (
+            f"How: Spend {attempting} minutes attempting the questions under timed conditions, "
+            f"then spend the last {reviewing} minutes reviewing the mark scheme and noting where you lost marks."
+        )
+    if m == "flashcards":
+        return "How: Go through all cards once, set aside ones you got wrong, then repeat the wrong ones until you get them all correct."
+    if m == "active recall":
+        return "How: Close your notes and write down everything you can remember about the topic from memory, then check against your notes and fill the gaps."
+    if m in ("review notes", "notes"):
+        return "How: Read through your notes actively — summarise each section in your own words in the margin or on a separate sheet as you go."
+    return None
 
 # Maps revision method keywords → preferred resource types (lowercase)
 _METHOD_RESOURCE_PREFS = {
@@ -338,7 +357,7 @@ def generate_plan(user_id: int, start_date: date, db: Session) -> Plan:
             if resource_result
             else reason
         )
-        instruction = _METHOD_INSTRUCTIONS.get(method.lower())
+        instruction = _method_instruction(method, slot_mins)
         if instruction:
             full_reason = f"{full_reason} {instruction}"
 
