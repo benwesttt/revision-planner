@@ -17,6 +17,9 @@ alembic/versions/*.pyc
 .env
 .env.*
 
+# One-off scripts with hardcoded credentials
+migrate.py
+
 # Editor
 .vscode/
 .idea/
