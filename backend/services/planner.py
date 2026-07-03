@@ -277,7 +277,7 @@ def generate_plan(user_id: int, start_date: date, db: Session) -> Plan:
         raise ValueError("No free time slots found in the next 7 days")
 
     # 3. Load and score all topics for this user
-    courses = db.query(Course).filter(Course.user_id == user_id).all()
+    courses = db.query(Course).filter(Course.user_id == user_id, Course.is_active == True).all()
     if not courses:
         raise ValueError("No courses found for this user")
 

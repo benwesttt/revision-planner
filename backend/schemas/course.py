@@ -9,6 +9,7 @@ class CourseBase(BaseModel):
     user_id: int
     name: str
     color: str
+    is_active: bool = True
 
 
 class CourseCreate(CourseBase):
@@ -18,6 +19,7 @@ class CourseCreate(CourseBase):
 class CourseUpdate(BaseModel):
     name: Optional[str] = None
     color: Optional[str] = None
+    is_active: Optional[bool] = None
 
 
 class CourseResponse(CourseBase):

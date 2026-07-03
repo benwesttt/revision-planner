@@ -129,6 +129,21 @@ export default function Courses() {
     }
   };
 
+  const handleToggleActive = async (course) => {
+    const nextActive = !course.is_active;
+    setCourses(prev => prev.map(c => c.id === course.id ? { ...c, is_active: nextActive } : c));
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL}/courses/${course.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ is_active: nextActive }),
+      });
+      if (!res.ok) throw new Error('Failed to update course');
+    } catch (err) {
+      setCourses(prev => prev.map(c => c.id === course.id ? { ...c, is_active: !nextActive } : c));
+      setError(err.message);
+    }
+  };
+
   const handleDeleteCourse = async (courseId) => {
     setDeletingCourse(courseId);
     try {
@@ -271,7 +286,7 @@ export default function Courses() {
             return (
               <div
                 key={course.id}
-                className="bg-gray-800 border border-gray-700 rounded-xl p-4 flex flex-col gap-3"
+                className={`bg-gray-800 border border-gray-700 rounded-xl p-4 flex flex-col gap-3 transition-opacity ${!course.is_active ? 'opacity-50' : ''}`}
               >
                 {/* Course header */}
                 {editingCourseId === course.id ? (
@@ -304,6 +319,20 @@ export default function Courses() {
                   <div className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: course.color }} />
                     <span className="font-semibold text-white text-sm flex-1">{course.name}</span>
+                    <span className="text-[10px] text-gray-500 select-none shrink-0">
+                      {course.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleActive(course)}
+                      role="switch"
+                      aria-checked={course.is_active}
+                      aria-label={course.is_active ? 'Set course inactive' : 'Set course active'}
+                      title={course.is_active ? 'Active — click to deactivate' : 'Inactive — click to activate'}
+                      className={`flex items-center w-7 h-4 rounded-full px-0.5 transition-colors shrink-0 ${course.is_active ? 'bg-indigo-600 justify-end' : 'bg-gray-600 justify-start'}`}
+                    >
+                      <span className="w-3 h-3 rounded-full bg-white" />
+                    </button>
                     {pendingDeleteCourse === course.id ? (
                       <>
                         <span className="text-xs text-gray-400">Delete?</span>

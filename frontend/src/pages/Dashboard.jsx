@@ -75,7 +75,7 @@ export default function Dashboard() {
         const coursesRes = await fetchWithAuth(`${API_BASE_URL}/courses/?user_id=${USER_ID}`);
         const courses = coursesRes.ok ? await coursesRes.json() : [];
         const cMap = {};
-        courses.forEach(c => { cMap[c.id] = { name: c.name, color: c.color }; });
+        courses.forEach(c => { cMap[c.id] = { name: c.name, color: c.color, is_active: c.is_active }; });
         setCourseMap(cMap);
 
         const topicLists = await Promise.all(
@@ -104,6 +104,7 @@ export default function Dashboard() {
           }
         });
         const neglected = allTopics
+          .filter(t => cMap[t.course_id]?.is_active !== false)
           .map(t => ({ id: t.id, name: t.name, courseId: t.course_id, lastRevised: latestByTopic[t.id] ?? null }))
           .sort((a, b) => {
             if (!a.lastRevised && !b.lastRevised) return 0;
@@ -118,7 +119,7 @@ export default function Dashboard() {
         const assessRes = await fetchWithAuth(`${API_BASE_URL}/assessments/`);
         const assessments = assessRes.ok ? await assessRes.json() : [];
         const upcoming = assessments
-          .filter(a => a.due_date)
+          .filter(a => a.due_date && cMap[a.course_id]?.is_active !== false)
           .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
           .slice(0, 5);
         setUpcomingAssessments(upcoming);

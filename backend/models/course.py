@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -11,6 +11,7 @@ class Course(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     name = Column(String, nullable=False)
     color = Column(String, nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True, server_default="true")
 
     user = relationship("User", back_populates="courses")
     topics = relationship("Topic", back_populates="course")
