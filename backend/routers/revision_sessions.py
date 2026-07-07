@@ -5,7 +5,9 @@ from sqlalchemy.orm import Session
 
 from auth import get_current_user
 from database import get_db
+from models.course import Course
 from models.revision_session import RevisionSession
+from models.topic import Topic
 from models.user import User
 from schemas.revision_session import (
     RevisionSessionCreate,
@@ -34,7 +36,11 @@ def get_revision_session(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    session = db.query(RevisionSession).filter(RevisionSession.id == session_id).first()
+    session = (
+        db.query(RevisionSession)
+        .filter(RevisionSession.id == session_id, RevisionSession.user_id == current_user.id)
+        .first()
+    )
     if not session:
         raise HTTPException(status_code=404, detail="Revision session not found")
     return session
@@ -46,6 +52,15 @@ def create_revision_session(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    topic = (
+        db.query(Topic)
+        .join(Course, Topic.course_id == Course.id)
+        .filter(Topic.id == payload.topic_id, Course.user_id == current_user.id)
+        .first()
+    )
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+
     data = payload.model_dump()
     data['user_id'] = current_user.id
     session = RevisionSession(**data)
@@ -62,7 +77,11 @@ def update_revision_session(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    session = db.query(RevisionSession).filter(RevisionSession.id == session_id).first()
+    session = (
+        db.query(RevisionSession)
+        .filter(RevisionSession.id == session_id, RevisionSession.user_id == current_user.id)
+        .first()
+    )
     if not session:
         raise HTTPException(status_code=404, detail="Revision session not found")
     for field, value in payload.model_dump(exclude_unset=True).items():
@@ -78,7 +97,11 @@ def delete_revision_session(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    session = db.query(RevisionSession).filter(RevisionSession.id == session_id).first()
+    session = (
+        db.query(RevisionSession)
+        .filter(RevisionSession.id == session_id, RevisionSession.user_id == current_user.id)
+        .first()
+    )
     if not session:
         raise HTTPException(status_code=404, detail="Revision session not found")
     db.delete(session)
