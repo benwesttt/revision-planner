@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from auth import get_current_user
 from database import get_db
 from models.assessment import Assessment
+from models.course import Course
 from models.user import User
 from schemas.assessment import AssessmentCreate, AssessmentResponse, AssessmentUpdate
 
@@ -18,7 +19,11 @@ def list_assessments(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    q = db.query(Assessment)
+    q = (
+        db.query(Assessment)
+        .join(Course, Assessment.course_id == Course.id)
+        .filter(Course.user_id == current_user.id)
+    )
     if course_id is not None:
         q = q.filter(Assessment.course_id == course_id)
     return q.all()
@@ -30,7 +35,12 @@ def get_assessment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+    assessment = (
+        db.query(Assessment)
+        .join(Course, Assessment.course_id == Course.id)
+        .filter(Assessment.id == assessment_id, Course.user_id == current_user.id)
+        .first()
+    )
     if not assessment:
         raise HTTPException(status_code=404, detail="Assessment not found")
     return assessment
@@ -42,6 +52,13 @@ def create_assessment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    course = (
+        db.query(Course)
+        .filter(Course.id == payload.course_id, Course.user_id == current_user.id)
+        .first()
+    )
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
     assessment = Assessment(**payload.model_dump())
     db.add(assessment)
     db.commit()
@@ -56,10 +73,26 @@ def update_assessment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+    assessment = (
+        db.query(Assessment)
+        .join(Course, Assessment.course_id == Course.id)
+        .filter(Assessment.id == assessment_id, Course.user_id == current_user.id)
+        .first()
+    )
     if not assessment:
         raise HTTPException(status_code=404, detail="Assessment not found")
-    for field, value in payload.model_dump(exclude_unset=True).items():
+
+    update_data = payload.model_dump(exclude_unset=True)
+    if "course_id" in update_data:
+        new_course = (
+            db.query(Course)
+            .filter(Course.id == update_data["course_id"], Course.user_id == current_user.id)
+            .first()
+        )
+        if not new_course:
+            raise HTTPException(status_code=404, detail="Course not found")
+
+    for field, value in update_data.items():
         setattr(assessment, field, value)
     db.commit()
     db.refresh(assessment)
@@ -72,7 +105,12 @@ def delete_assessment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+    assessment = (
+        db.query(Assessment)
+        .join(Course, Assessment.course_id == Course.id)
+        .filter(Assessment.id == assessment_id, Course.user_id == current_user.id)
+        .first()
+    )
     if not assessment:
         raise HTTPException(status_code=404, detail="Assessment not found")
     db.delete(assessment)
