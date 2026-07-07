@@ -138,6 +138,9 @@ export default function LogSession() {
     }
   };
 
+  const activeCourses = courses.filter(c => c.is_active);
+  const inactiveCourses = courses.filter(c => !c.is_active);
+
   const inputCls = 'bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 w-full';
   const labelCls = 'flex flex-col gap-1';
   const labelTextCls = 'text-xs text-gray-400';
@@ -172,9 +175,20 @@ export default function LogSession() {
               required
             >
               <option value="">Select course…</option>
-              {courses.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
+              {activeCourses.length > 0 && (
+                <optgroup label="Active" className="text-gray-200 font-normal">
+                  {activeCourses.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </optgroup>
+              )}
+              {inactiveCourses.length > 0 && (
+                <optgroup label="Inactive" className="text-gray-500 font-normal">
+                  {inactiveCourses.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </label>
 

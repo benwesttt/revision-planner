@@ -262,6 +262,9 @@ export default function Resources() {
     }
   };
 
+  const activeCourses = courses.filter(c => c.is_active);
+  const inactiveCourses = courses.filter(c => !c.is_active);
+
   const displayed = filterCourse
     ? resources.filter(r => r.course_id === filterCourse)
     : resources;
@@ -289,7 +292,7 @@ export default function Resources() {
 
       {/* Course filter */}
       {courses.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-6">
+        <div className="flex flex-wrap gap-2 items-center mb-6">
           <button
             onClick={() => setFilterCourse(null)}
             className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
@@ -300,7 +303,7 @@ export default function Resources() {
           >
             All Courses
           </button>
-          {courses.map(c => (
+          {activeCourses.map(c => (
             <button
               key={c.id}
               onClick={() => setFilterCourse(filterCourse === c.id ? null : c.id)}
@@ -314,6 +317,27 @@ export default function Resources() {
               {c.name}
             </button>
           ))}
+          {inactiveCourses.length > 0 && (
+            <>
+              <span className="basis-full text-[10px] font-semibold uppercase tracking-wide text-gray-600 mt-1">
+                Inactive
+              </span>
+              {inactiveCourses.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => setFilterCourse(filterCourse === c.id ? null : c.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors opacity-60 ${
+                    filterCourse === c.id
+                      ? 'bg-indigo-600 border-indigo-500 text-white'
+                      : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200'
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: c.color }} />
+                  {c.name}
+                </button>
+              ))}
+            </>
+          )}
         </div>
       )}
 
@@ -359,7 +383,20 @@ export default function Resources() {
                 required
               >
                 <option value="">Select course…</option>
-                {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {activeCourses.length > 0 && (
+                  <optgroup label="Active" className="text-gray-200 font-normal">
+                    {activeCourses.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </optgroup>
+                )}
+                {inactiveCourses.length > 0 && (
+                  <optgroup label="Inactive" className="text-gray-500 font-normal">
+                    {inactiveCourses.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
             </label>
           </div>
@@ -456,7 +493,20 @@ export default function Resources() {
                           }}
                           className={inputCls}
                         >
-                          {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                          {activeCourses.length > 0 && (
+                            <optgroup label="Active" className="text-gray-200 font-normal">
+                              {activeCourses.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                              ))}
+                            </optgroup>
+                          )}
+                          {inactiveCourses.length > 0 && (
+                            <optgroup label="Inactive" className="text-gray-500 font-normal">
+                              {inactiveCourses.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                              ))}
+                            </optgroup>
+                          )}
                         </select>
                       </label>
                     </div>
