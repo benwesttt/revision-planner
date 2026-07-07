@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from auth import get_current_user
 from database import get_db
+from models.course import Course
 from models.plan import PlanBlock
 from models.topic import Topic
 from models.user import User
@@ -19,7 +20,11 @@ def list_topics(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    q = db.query(Topic)
+    q = (
+        db.query(Topic)
+        .join(Course, Topic.course_id == Course.id)
+        .filter(Course.user_id == current_user.id)
+    )
     if course_id is not None:
         q = q.filter(Topic.course_id == course_id)
     return q.all()
@@ -31,7 +36,12 @@ def get_topic(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    topic = db.query(Topic).filter(Topic.id == topic_id).first()
+    topic = (
+        db.query(Topic)
+        .join(Course, Topic.course_id == Course.id)
+        .filter(Topic.id == topic_id, Course.user_id == current_user.id)
+        .first()
+    )
     if not topic:
         raise HTTPException(status_code=404, detail="Topic not found")
     return topic
@@ -43,6 +53,13 @@ def create_topic(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    course = (
+        db.query(Course)
+        .filter(Course.id == payload.course_id, Course.user_id == current_user.id)
+        .first()
+    )
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
     topic = Topic(**payload.model_dump())
     db.add(topic)
     db.commit()
@@ -57,7 +74,12 @@ def update_topic(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    topic = db.query(Topic).filter(Topic.id == topic_id).first()
+    topic = (
+        db.query(Topic)
+        .join(Course, Topic.course_id == Course.id)
+        .filter(Topic.id == topic_id, Course.user_id == current_user.id)
+        .first()
+    )
     if not topic:
         raise HTTPException(status_code=404, detail="Topic not found")
     for field, value in payload.model_dump(exclude_unset=True).items():
@@ -73,7 +95,12 @@ def delete_topic(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    topic = db.query(Topic).filter(Topic.id == topic_id).first()
+    topic = (
+        db.query(Topic)
+        .join(Course, Topic.course_id == Course.id)
+        .filter(Topic.id == topic_id, Course.user_id == current_user.id)
+        .first()
+    )
     if not topic:
         raise HTTPException(status_code=404, detail="Topic not found")
     db.query(PlanBlock).filter(PlanBlock.topic_id == topic_id).delete(synchronize_session=False)
