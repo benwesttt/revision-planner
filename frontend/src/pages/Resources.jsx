@@ -94,10 +94,9 @@ export default function Resources() {
       if (!resRes.ok) throw new Error('Failed to fetch resources');
       if (!cRes.ok) throw new Error('Failed to fetch courses');
 
-      const [allResources, allCourses] = await Promise.all([resRes.json(), cRes.json()]);
-
-      const userCourseIds = new Set(allCourses.map(c => c.id));
-      const userResources = allResources.filter(r => userCourseIds.has(r.course_id));
+      // /resources/ and /courses/ are both scoped to the caller server-side,
+      // so no client-side ownership filtering is needed here.
+      const [userResources, allCourses] = await Promise.all([resRes.json(), cRes.json()]);
 
       setCourses(allCourses);
       setResources(userResources);
