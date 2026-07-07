@@ -16,7 +16,7 @@ def list_users(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return db.query(User).all()
+    return [current_user]
 
 
 @router.get("/me", response_model=UserResponse)
@@ -30,7 +30,11 @@ def get_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    user = db.query(User).filter(User.id == user_id).first()
+    user = (
+        db.query(User)
+        .filter(User.id == user_id, User.id == current_user.id)
+        .first()
+    )
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
@@ -56,7 +60,11 @@ def update_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    user = db.query(User).filter(User.id == user_id).first()
+    user = (
+        db.query(User)
+        .filter(User.id == user_id, User.id == current_user.id)
+        .first()
+    )
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     for field, value in payload.model_dump(exclude_unset=True).items():
@@ -72,7 +80,11 @@ def delete_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    user = db.query(User).filter(User.id == user_id).first()
+    user = (
+        db.query(User)
+        .filter(User.id == user_id, User.id == current_user.id)
+        .first()
+    )
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     db.delete(user)
