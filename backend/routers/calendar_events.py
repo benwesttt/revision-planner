@@ -30,7 +30,11 @@ def get_calendar_event(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    event = db.query(CalendarEvent).filter(CalendarEvent.id == event_id).first()
+    event = (
+        db.query(CalendarEvent)
+        .filter(CalendarEvent.id == event_id, CalendarEvent.user_id == current_user.id)
+        .first()
+    )
     if not event:
         raise HTTPException(status_code=404, detail="Calendar event not found")
     return event
@@ -58,7 +62,11 @@ def update_calendar_event(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    event = db.query(CalendarEvent).filter(CalendarEvent.id == event_id).first()
+    event = (
+        db.query(CalendarEvent)
+        .filter(CalendarEvent.id == event_id, CalendarEvent.user_id == current_user.id)
+        .first()
+    )
     if not event:
         raise HTTPException(status_code=404, detail="Calendar event not found")
     for field, value in payload.model_dump(exclude_unset=True).items():
@@ -74,7 +82,11 @@ def delete_calendar_event(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    event = db.query(CalendarEvent).filter(CalendarEvent.id == event_id).first()
+    event = (
+        db.query(CalendarEvent)
+        .filter(CalendarEvent.id == event_id, CalendarEvent.user_id == current_user.id)
+        .first()
+    )
     if not event:
         raise HTTPException(status_code=404, detail="Calendar event not found")
     db.delete(event)
