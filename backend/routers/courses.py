@@ -32,7 +32,11 @@ def get_course(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    course = db.query(Course).filter(Course.id == course_id).first()
+    course = (
+        db.query(Course)
+        .filter(Course.id == course_id, Course.user_id == current_user.id)
+        .first()
+    )
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
     return course
@@ -60,7 +64,11 @@ def update_course(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    course = db.query(Course).filter(Course.id == course_id).first()
+    course = (
+        db.query(Course)
+        .filter(Course.id == course_id, Course.user_id == current_user.id)
+        .first()
+    )
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
     for field, value in payload.model_dump(exclude_unset=True).items():
@@ -76,7 +84,11 @@ def delete_course(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    course = db.query(Course).filter(Course.id == course_id).first()
+    course = (
+        db.query(Course)
+        .filter(Course.id == course_id, Course.user_id == current_user.id)
+        .first()
+    )
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 
