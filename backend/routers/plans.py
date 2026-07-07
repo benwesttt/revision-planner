@@ -26,7 +26,11 @@ def get_plan(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    plan = db.query(Plan).filter(Plan.id == plan_id).first()
+    plan = (
+        db.query(Plan)
+        .filter(Plan.id == plan_id, Plan.user_id == current_user.id)
+        .first()
+    )
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")
     return plan
@@ -54,7 +58,11 @@ def update_plan(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    plan = db.query(Plan).filter(Plan.id == plan_id).first()
+    plan = (
+        db.query(Plan)
+        .filter(Plan.id == plan_id, Plan.user_id == current_user.id)
+        .first()
+    )
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")
     for field, value in payload.model_dump(exclude_unset=True).items():
@@ -70,7 +78,11 @@ def delete_plan(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    plan = db.query(Plan).filter(Plan.id == plan_id).first()
+    plan = (
+        db.query(Plan)
+        .filter(Plan.id == plan_id, Plan.user_id == current_user.id)
+        .first()
+    )
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")
     db.delete(plan)
