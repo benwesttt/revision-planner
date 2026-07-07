@@ -38,7 +38,10 @@ def get_revision_preference(
 ):
     pref = (
         db.query(RevisionPreference)
-        .filter(RevisionPreference.id == preference_id)
+        .filter(
+            RevisionPreference.id == preference_id,
+            RevisionPreference.user_id == current_user.id,
+        )
         .first()
     )
     if not pref:
@@ -77,7 +80,10 @@ def update_revision_preference(
 ):
     pref = (
         db.query(RevisionPreference)
-        .filter(RevisionPreference.id == preference_id)
+        .filter(
+            RevisionPreference.id == preference_id,
+            RevisionPreference.user_id == current_user.id,
+        )
         .first()
     )
     if not pref:
@@ -119,7 +125,10 @@ def delete_revision_preference(
 ):
     pref = (
         db.query(RevisionPreference)
-        .filter(RevisionPreference.id == preference_id)
+        .filter(
+            RevisionPreference.id == preference_id,
+            RevisionPreference.user_id == current_user.id,
+        )
         .first()
     )
     if not pref:
