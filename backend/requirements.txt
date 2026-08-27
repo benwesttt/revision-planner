@@ -8,4 +8,4 @@ python-dotenv
 psycopg2-binary
 
 python-jose
-httpx
+httpx<0.28
