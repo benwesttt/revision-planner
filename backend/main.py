@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -18,9 +20,16 @@ from routers import (
 
 app = FastAPI(title="Revision Planner API")
 
+_allowed_origins_env = os.environ.get("ALLOWED_ORIGINS")
+allowed_origins = (
+    [origin.strip() for origin in _allowed_origins_env.split(",") if origin.strip()]
+    if _allowed_origins_env
+    else ["https://revision-planner-lyart.vercel.app"]
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://revision-planner-lyart.vercel.app"],
+    allow_origins=allowed_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
