@@ -1,3 +1,5 @@
+import TimerWidget from './TimerWidget';
+
 export default function TopBar({ onMenuToggle }) {
   return (
     <header className="h-14 bg-gray-900 border-b border-gray-800 flex items-center px-4 shrink-0">
@@ -11,6 +13,7 @@ export default function TopBar({ onMenuToggle }) {
         </svg>
       </button>
       <span className="text-lg font-bold text-white tracking-tight">RevisionAI</span>
+      <TimerWidget />
     </header>
   );
 }
