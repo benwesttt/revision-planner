@@ -1,6 +1,7 @@
 from datetime import date, datetime, time, timedelta
 from typing import List, Optional, Tuple
 
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from models.assessment import Assessment
@@ -133,8 +134,13 @@ def _get_free_slots(
         db.query(CalendarEvent)
         .filter(
             CalendarEvent.user_id == user_id,
-            CalendarEvent.start_time < window_end,
-            CalendarEvent.end_time > window_start,
+            or_(
+                CalendarEvent.recurring == True,
+                and_(
+                    CalendarEvent.start_time < window_end,
+                    CalendarEvent.end_time > window_start,
+                ),
+            ),
         )
         .all()
     )
@@ -156,8 +162,17 @@ def _get_free_slots(
         for ev in events:
             if ev.week not in (day_week, 'both'):
                 continue
-            clipped_start = max(ev.start_time, study_start)
-            clipped_end = min(ev.end_time, study_end)
+            if ev.recurring:
+                if ev.start_time.weekday() != day.weekday():
+                    continue
+                if day < ev.start_time.date():
+                    continue
+                clip_start = datetime.combine(day, ev.start_time.time())
+                clip_end = datetime.combine(day, ev.end_time.time())
+            else:
+                clip_start, clip_end = ev.start_time, ev.end_time
+            clipped_start = max(clip_start, study_start)
+            clipped_end = min(clip_end, study_end)
             if clipped_start < clipped_end:
                 day_events.append((clipped_start, clipped_end))
 
