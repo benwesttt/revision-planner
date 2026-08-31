@@ -303,7 +303,7 @@ def generate_plan(user_id: int, start_date: date, db: Session) -> Plan:
     db.flush()  # assigns plan.id without committing
 
     # 6. Fill slots, cycling through topics and methods
-    used_topics_per_day: dict = {}        # date → set of topic_ids already scheduled
+    used_topics_per_day: dict = {}        # date → {topic_id: times scheduled today}
     day_minutes: dict = {}                # date → total revision minutes scheduled
     used_courses_per_round: dict = {}     # date → set of course_ids used in current rotation round
 
@@ -318,7 +318,7 @@ def generate_plan(user_id: int, start_date: date, db: Session) -> Plan:
         if day_minutes.get(slot_day, 0) >= daily_cap_mins:
             continue
 
-        used_today = used_topics_per_day.setdefault(slot_day, set())
+        counts_today = used_topics_per_day.setdefault(slot_day, {})
         used_courses_round = used_courses_per_round.setdefault(slot_day, set())
 
         # Course rotation: prefer courses not yet scheduled in the current round.
@@ -328,21 +328,31 @@ def generate_plan(user_id: int, start_date: date, db: Session) -> Plan:
             used_courses_round.clear()
             available_courses = all_course_ids_set
 
-        # Pick the highest-scored unused topic from an available course
+        # Pick the highest-scored topic not yet used today from an available course
         selected_idx = next(
             (j for j, (_, _, t) in enumerate(scored)
-             if t.id not in used_today and t.course_id in available_courses),
+             if counts_today.get(t.id, 0) == 0 and t.course_id in available_courses),
             None,
         )
         if selected_idx is None:
-            # All available-course topics used today — fall back to any unused topic
+            # All available-course topics used today — fall back to any topic
+            # not yet used today, regardless of course
             selected_idx = next(
-                (j for j, (_, _, t) in enumerate(scored) if t.id not in used_today),
-                0,  # absolute fallback: all topics exhausted for this day
+                (j for j, (_, _, t) in enumerate(scored) if counts_today.get(t.id, 0) == 0),
+                None,
+            )
+        if selected_idx is None:
+            # Every topic has had at least one slot today — start a new rotation
+            # lap through the same score-sorted list: hand out 2nd slots in
+            # score order, then 3rd slots, etc., instead of pinning to one topic.
+            min_count = min(counts_today.get(t.id, 0) for _, _, t in scored)
+            selected_idx = next(
+                j for j, (_, _, t) in enumerate(scored)
+                if counts_today.get(t.id, 0) == min_count
             )
 
         _score, reason, topic = scored[selected_idx]
-        used_today.add(topic.id)
+        counts_today[topic.id] = counts_today.get(topic.id, 0) + 1
         used_courses_round.add(topic.course_id)
         day_minutes[slot_day] = day_minutes.get(slot_day, 0) + slot_mins
 
