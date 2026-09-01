@@ -22,6 +22,12 @@ MIN_SESSION_MINUTES = 25
 BUFFER_MINUTES = 10
 MAX_REVISION_HOURS_PER_DAY = 6
 DEFAULT_METHODS = ["active recall", "flashcards", "notes"]
+# Stand-in score for a Learning Mode course with no taught topics yet, so it
+# can still win a turn in the tier1/2/3 cascade below (which otherwise only
+# knows about topics in `scored`). Matches _score_topic's baseline for a
+# never-revised topic with no confidence data (40 + 20), for fair competition
+# against revision-mode courses' urgent topics.
+_LEARNING_MODE_PLACEHOLDER_SCORE = 60
 
 def _method_instruction(method: str, duration_minutes: int) -> Optional[str]:
     m = method.lower()
@@ -265,6 +271,85 @@ def _score_topic(
     return score, reason
 
 
+def _select_topic_from_pool(
+    pool: List[Topic], counts_today: dict
+) -> Optional[Topic]:
+    """From an already-priority-ordered pool (score-desc for revision,
+    sequence_order-asc for a learning queue), pick the first topic not yet
+    used today; if every topic in the pool has had at least one slot today,
+    start a new rotation lap by minimum today-count, preserving priority
+    order — same mechanism as the plain revision exhaustion fallback.
+    Returns None if the pool itself is empty."""
+    if not pool:
+        return None
+    idx = next(
+        (i for i, t in enumerate(pool) if counts_today.get(t.id, 0) == 0),
+        None,
+    )
+    if idx is None:
+        min_count = min(counts_today.get(t.id, 0) for t in pool)
+        idx = next(i for i, t in enumerate(pool) if counts_today.get(t.id, 0) == min_count)
+    return pool[idx]
+
+
+def _select_learning_mode_topic(
+    course: Course,
+    fallback_topic: Topic,
+    fallback_reason: str,
+    slot_day: date,
+    target_ratio: dict,
+    learning_queues: dict,
+    revision_pool_by_course: dict,
+    counts_today: dict,
+    learning_split_per_day: dict,
+    reason_by_topic_id: dict,
+) -> Tuple[Topic, str]:
+    """Once the existing course-rotation cascade has chosen this Learning
+    Mode course for a slot, decide whether the slot actually comes from its
+    pre-learning queue (by sequence_order) or its normal revision-scored
+    topics (by score), based on that course's running today's learning vs
+    revision split against its target ratio. Whichever pool is chosen, pick
+    the topic within it via the same today-usage/rotation-lap logic as
+    ordinary revision selection. Falls back to whichever pool has topics if
+    the preferred one is empty for this course."""
+    learning_pool = learning_queues.get(course.id, [])
+    revision_pool = revision_pool_by_course.get(course.id, [])
+    ratio = target_ratio.get(course.id, 0.0)
+
+    split = learning_split_per_day.setdefault((slot_day, course.id), {"learning": 0, "revision": 0})
+    total_given = split["learning"] + split["revision"]
+    if total_given == 0:
+        prefer_learning = ratio > 0
+    else:
+        current_learning_share = split["learning"] / total_given
+        prefer_learning = current_learning_share < ratio
+
+    pools_in_order = (
+        [(learning_pool, "learning"), (revision_pool, "revision")]
+        if prefer_learning
+        else [(revision_pool, "revision"), (learning_pool, "learning")]
+    )
+
+    for pool, pool_name in pools_in_order:
+        topic = _select_topic_from_pool(pool, counts_today)
+        if topic is not None:
+            split[pool_name] += 1
+            if pool_name == "learning":
+                reason = (
+                    f"Pre-learning: next topic in sequence for {course.name}, "
+                    f"not yet taught (position {topic.sequence_order})"
+                )
+            else:
+                reason = reason_by_topic_id[topic.id]
+            return topic, reason
+
+    # Structurally unreachable: this is only called for a course that had
+    # some representation (real or placeholder) in `scored`, which
+    # guarantees at least one of learning_pool/revision_pool is non-empty.
+    # Fall back to the original pick rather than ever raising.
+    return fallback_topic, fallback_reason
+
+
 def generate_plan(user_id: int, start_date: date, db: Session) -> Plan:
     # 1. Load user preferences (single fetch used throughout)
     pref: Optional[RevisionPreference] = (
@@ -301,12 +386,63 @@ def generate_plan(user_id: int, start_date: date, db: Session) -> Plan:
     if not topics:
         raise ValueError("No topics found for this user's courses")
 
-    # 4. Sort by score descending
+    # 4. Sort by score descending — for revision-mode courses this is every
+    # topic, exactly as before; for Learning Mode courses, only topics that
+    # have been marked taught flow in here (they then behave exactly like
+    # any other revision topic). Untaught Learning Mode topics are handled
+    # separately below via each course's learning queue.
+    course_by_id = {c.id: c for c in courses}
     scored: List[Tuple[int, str, Topic]] = sorted(
-        [(_score_topic(topic, start_date, db) + (topic,)) for topic in topics],
+        [
+            (_score_topic(topic, start_date, db) + (topic,))
+            for topic in topics
+            if course_by_id[topic.course_id].mode == 'revision' or topic.status == 'taught'
+        ],
         key=lambda x: x[0],
         reverse=True,
     )
+    revision_pool_by_course: dict = {}
+    for _, _, t in scored:
+        revision_pool_by_course.setdefault(t.course_id, []).append(t)
+    reason_by_topic_id = {t.id: reason for _, reason, t in scored}
+
+    # 4b. Learning Mode setup: per-course queue of not-yet-taught topics
+    # (ordered by sequence_order; topics with no sequence_order are
+    # excluded rather than guessed at) and each course's target share of
+    # slots that should go to that queue versus normal revision scoring.
+    topics_by_course: dict = {}
+    for t in topics:
+        topics_by_course.setdefault(t.course_id, []).append(t)
+
+    learning_queues: dict = {}
+    target_ratio: dict = {}
+    for course in courses:
+        if course.mode != 'learning':
+            continue
+        course_topics = topics_by_course.get(course.id, [])
+        total_count = len(course_topics)
+        if total_count == 0:
+            continue
+        untaught_count = sum(1 for t in course_topics if t.status != 'taught')
+        target_ratio[course.id] = untaught_count / total_count
+        learning_queues[course.id] = sorted(
+            (t for t in course_topics if t.status != 'taught' and t.sequence_order is not None),
+            key=lambda t: t.sequence_order,
+        )
+
+    # A Learning Mode course with no taught topics yet has no representation
+    # in `scored` at all, so it could never win a slot via the cascade below
+    # — give it exactly one placeholder entry so it can. The real topic
+    # actually scheduled is always decided afterwards by the substitution
+    # logic in the slot loop, never the placeholder itself.
+    scored_course_ids = {t.course_id for _, _, t in scored}
+    placeholders_added = False
+    for cid, queue in learning_queues.items():
+        if cid not in scored_course_ids and queue:
+            scored.append((_LEARNING_MODE_PLACEHOLDER_SCORE, "", queue[0]))
+            placeholders_added = True
+    if placeholders_added:
+        scored.sort(key=lambda x: x[0], reverse=True)
 
     # 5. Build the plan
     plan = Plan(
@@ -321,6 +457,7 @@ def generate_plan(user_id: int, start_date: date, db: Session) -> Plan:
     used_topics_per_day: dict = {}        # date → {topic_id: times scheduled today}
     day_minutes: dict = {}                # date → total revision minutes scheduled
     used_courses_per_round: dict = {}     # date → set of course_ids used in current rotation round
+    learning_split_per_day: dict = {}     # (date, course_id) → {'learning': n, 'revision': n}
 
     all_course_ids_set = set(course_ids)
 
@@ -331,6 +468,12 @@ def generate_plan(user_id: int, start_date: date, db: Session) -> Plan:
 
         # Daily hour cap: skip slot if day is full
         if day_minutes.get(slot_day, 0) >= daily_cap_mins:
+            continue
+
+        if not scored:
+            # Nothing schedulable today at all — e.g. only Learning Mode
+            # courses exist and none have a taught topic or a queued,
+            # sequenced topic yet.
             continue
 
         counts_today = used_topics_per_day.setdefault(slot_day, {})
@@ -367,6 +510,20 @@ def generate_plan(user_id: int, start_date: date, db: Session) -> Plan:
             )
 
         _score, reason, topic = scored[selected_idx]
+
+        # Learning Mode: once a course has been chosen for this slot (above,
+        # unchanged), decide whether it's actually served from its learning
+        # queue or its normal revision scoring, per that course's target
+        # ratio. Revision-mode courses are entirely unaffected — course.mode
+        # is 'revision' for every course that existed before this feature.
+        course = course_by_id[topic.course_id]
+        if course.mode == 'learning':
+            topic, reason = _select_learning_mode_topic(
+                course, topic, reason, slot_day,
+                target_ratio, learning_queues, revision_pool_by_course,
+                counts_today, learning_split_per_day, reason_by_topic_id,
+            )
+
         counts_today[topic.id] = counts_today.get(topic.id, 0) + 1
         used_courses_round.add(topic.course_id)
         day_minutes[slot_day] = day_minutes.get(slot_day, 0) + slot_mins
