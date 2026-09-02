@@ -9,6 +9,7 @@ class RevisionSessionBase(BaseModel):
 
     user_id: int
     topic_id: int
+    plan_block_id: Optional[int] = None
     method: str
     duration_minutes: int
     confidence: Optional[int] = None
@@ -22,11 +23,13 @@ class RevisionSessionUpdate(BaseModel):
     method: Optional[str] = None
     duration_minutes: Optional[int] = None
     confidence: Optional[int] = None
+    plan_block_id: Optional[int] = None
 
 
 class RevisionSessionStart(BaseModel):
     topic_id: int
     method: Optional[str] = None
+    plan_block_id: Optional[int] = None
 
 
 class RevisionSessionStop(BaseModel):
@@ -42,6 +45,7 @@ class RevisionSessionResponse(BaseModel):
     id: int
     user_id: int
     topic_id: int
+    plan_block_id: Optional[int] = None
     method: Optional[str] = None
     duration_minutes: Optional[int] = None
     confidence: Optional[int] = None
@@ -52,6 +56,7 @@ class RevisionSessionResponse(BaseModel):
     paused_at: Optional[datetime] = None
     paused_duration_seconds: int
     notes: Optional[str] = None
+    planned_duration_minutes: Optional[int] = None
 
     @field_validator("started_at", "paused_at")
     @classmethod

@@ -12,6 +12,7 @@ class RevisionSession(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     topic_id = Column(Integer, ForeignKey("topics.id"), nullable=False)
+    plan_block_id = Column(Integer, ForeignKey("plan_blocks.id"), nullable=True)
     method = Column(String, nullable=True)
     duration_minutes = Column(Integer, nullable=True)
     confidence = Column(Integer, nullable=True)
@@ -25,3 +26,4 @@ class RevisionSession(Base):
 
     user = relationship("User", back_populates="revision_sessions")
     topic = relationship("Topic", back_populates="revision_sessions")
+    plan_block = relationship("PlanBlock")

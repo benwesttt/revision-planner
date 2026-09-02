@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from auth import get_current_user
 from database import get_db
 from models.course import Course
+from models.plan import Plan, PlanBlock
 from models.revision_session import RevisionSession
 from models.topic import Topic
 from models.user import User
@@ -56,6 +57,34 @@ def _owned_session_or_404(db: Session, session_id: int, current_user: User) -> R
     return session
 
 
+def _validated_plan_block(
+    db: Session, plan_block_id: int, topic_id: int, current_user: User
+) -> PlanBlock:
+    plan_block = (
+        db.query(PlanBlock)
+        .join(Plan, PlanBlock.plan_id == Plan.id)
+        .filter(PlanBlock.id == plan_block_id, Plan.user_id == current_user.id)
+        .first()
+    )
+    if not plan_block:
+        raise HTTPException(status_code=404, detail="Plan block not found")
+    if plan_block.topic_id != topic_id:
+        raise HTTPException(
+            status_code=422, detail="Plan block does not belong to this session's topic"
+        )
+    return plan_block
+
+
+def _to_response(session: RevisionSession) -> RevisionSessionResponse:
+    response = RevisionSessionResponse.model_validate(session)
+    if session.plan_block is not None:
+        block = session.plan_block
+        response.planned_duration_minutes = round(
+            (block.end_time - block.start_time).total_seconds() / 60
+        )
+    return response
+
+
 @router.get("/", response_model=List[RevisionSessionResponse])
 def list_revision_sessions(
     topic_id: Optional[int] = None,
@@ -65,7 +94,7 @@ def list_revision_sessions(
     q = db.query(RevisionSession).filter(RevisionSession.user_id == current_user.id)
     if topic_id is not None:
         q = q.filter(RevisionSession.topic_id == topic_id)
-    return q.all()
+    return [_to_response(s) for s in q.all()]
 
 
 @router.get("/current", response_model=Optional[RevisionSessionResponse])
@@ -73,7 +102,7 @@ def get_current_revision_session(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return (
+    session = (
         db.query(RevisionSession)
         .filter(
             RevisionSession.user_id == current_user.id,
@@ -82,6 +111,7 @@ def get_current_revision_session(
         .order_by(RevisionSession.started_at.desc())
         .first()
     )
+    return _to_response(session) if session else None
 
 
 @router.post("/start", response_model=RevisionSessionResponse, status_code=201)
@@ -91,6 +121,8 @@ def start_revision_session(
     current_user: User = Depends(get_current_user),
 ):
     _owned_topic_or_404(db, payload.topic_id, current_user)
+    if payload.plan_block_id is not None:
+        _validated_plan_block(db, payload.plan_block_id, payload.topic_id, current_user)
 
     existing = (
         db.query(RevisionSession)
@@ -109,6 +141,7 @@ def start_revision_session(
     session = RevisionSession(
         user_id=current_user.id,
         topic_id=payload.topic_id,
+        plan_block_id=payload.plan_block_id,
         method=payload.method,
         status="in_progress",
         started_at=datetime.now(timezone.utc),
@@ -117,7 +150,7 @@ def start_revision_session(
     db.add(session)
     db.commit()
     db.refresh(session)
-    return session
+    return _to_response(session)
 
 
 @router.patch("/{session_id}/pause", response_model=RevisionSessionResponse)
@@ -135,7 +168,7 @@ def pause_revision_session(
     session.paused_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(session)
-    return session
+    return _to_response(session)
 
 
 @router.patch("/{session_id}/resume", response_model=RevisionSessionResponse)
@@ -155,7 +188,7 @@ def resume_revision_session(
     session.paused_at = None
     db.commit()
     db.refresh(session)
-    return session
+    return _to_response(session)
 
 
 @router.patch("/{session_id}/stop", response_model=RevisionSessionResponse)
@@ -183,7 +216,7 @@ def stop_revision_session(
 
     db.commit()
     db.refresh(session)
-    return session
+    return _to_response(session)
 
 
 @router.get("/{session_id}", response_model=RevisionSessionResponse)
@@ -199,7 +232,7 @@ def get_revision_session(
     )
     if not session:
         raise HTTPException(status_code=404, detail="Revision session not found")
-    return session
+    return _to_response(session)
 
 
 @router.post("/", response_model=RevisionSessionResponse, status_code=201)
@@ -216,6 +249,8 @@ def create_revision_session(
     )
     if not topic:
         raise HTTPException(status_code=404, detail="Topic not found")
+    if payload.plan_block_id is not None:
+        _validated_plan_block(db, payload.plan_block_id, payload.topic_id, current_user)
 
     data = payload.model_dump()
     data['user_id'] = current_user.id
@@ -223,7 +258,7 @@ def create_revision_session(
     db.add(session)
     db.commit()
     db.refresh(session)
-    return session
+    return _to_response(session)
 
 
 @router.put("/{session_id}", response_model=RevisionSessionResponse)
@@ -244,7 +279,7 @@ def update_revision_session(
         setattr(session, field, value)
     db.commit()
     db.refresh(session)
-    return session
+    return _to_response(session)
 
 
 @router.delete("/{session_id}", status_code=204)
