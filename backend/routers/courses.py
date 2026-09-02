@@ -1,3 +1,4 @@
+from datetime import date
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -13,7 +14,12 @@ from models.revision_session import RevisionSession
 from models.topic import Topic
 from models.topic_resource import TopicResource
 from models.user import User
-from schemas.course import CourseCreate, CourseResponse, CourseUpdate
+from schemas.course import (
+    CourseCreate,
+    CourseLearningStatusResponse,
+    CourseResponse,
+    CourseUpdate,
+)
 
 router = APIRouter(prefix="/courses", tags=["courses"])
 
@@ -40,6 +46,42 @@ def get_course(
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
     return course
+
+
+@router.get("/{course_id}/learning-status", response_model=CourseLearningStatusResponse)
+def get_course_learning_status(
+    course_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    course = (
+        db.query(Course)
+        .filter(Course.id == course_id, Course.user_id == current_user.id)
+        .first()
+    )
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    if course.mode != 'learning':
+        raise HTTPException(
+            status_code=422, detail="This endpoint only applies to Learning Mode courses"
+        )
+
+    topics = db.query(Topic).filter(Topic.course_id == course_id).all()
+    today = date.today()
+    behind_pace = [
+        t for t in topics
+        if t.status != 'taught' and t.expected_taught_by is not None and t.expected_taught_by <= today
+    ]
+
+    return CourseLearningStatusResponse(
+        course_id=course.id,
+        taught_count=sum(1 for t in topics if t.status == 'taught'),
+        total_count=len(topics),
+        behind_pace=[
+            {"id": t.id, "name": t.name, "expected_taught_by": t.expected_taught_by}
+            for t in behind_pace
+        ],
+    )
 
 
 @router.post("/", response_model=CourseResponse, status_code=201)

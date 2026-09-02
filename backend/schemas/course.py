@@ -1,4 +1,5 @@
-from typing import Optional
+from datetime import date
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -20,7 +21,22 @@ class CourseUpdate(BaseModel):
     name: Optional[str] = None
     color: Optional[str] = None
     is_active: Optional[bool] = None
+    mode: Literal["learning", "revision"] = "revision"
 
 
 class CourseResponse(CourseBase):
     id: int
+    mode: Literal["learning", "revision"] = "revision"
+
+
+class TopicBehindPace(BaseModel):
+    id: int
+    name: str
+    expected_taught_by: Optional[date] = None
+
+
+class CourseLearningStatusResponse(BaseModel):
+    course_id: int
+    taught_count: int
+    total_count: int
+    behind_pace: List[TopicBehindPace] = []

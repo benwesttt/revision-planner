@@ -61,3 +61,4 @@ class GeneratePlanRequest(BaseModel):
 
 class PlanWithBlocksResponse(PlanResponse):
     plan_blocks: List[PlanBlockResponse] = []
+    warnings: List[str] = []

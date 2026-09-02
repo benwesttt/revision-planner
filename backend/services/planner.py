@@ -350,7 +350,7 @@ def _select_learning_mode_topic(
     return fallback_topic, fallback_reason
 
 
-def generate_plan(user_id: int, start_date: date, db: Session) -> Plan:
+def generate_plan(user_id: int, start_date: date, db: Session) -> Tuple[Plan, List[str]]:
     # 1. Load user preferences (single fetch used throughout)
     pref: Optional[RevisionPreference] = (
         db.query(RevisionPreference)
@@ -443,6 +443,18 @@ def generate_plan(user_id: int, start_date: date, db: Session) -> Plan:
             placeholders_added = True
     if placeholders_added:
         scored.sort(key=lambda x: x[0], reverse=True)
+
+    # Any Learning Mode course still absent from `scored` at this point has
+    # no taught topics and no untaught topics with a sequence_order set (or
+    # no topics at all) — it will produce zero plan blocks. Surface this
+    # rather than silently omitting the course.
+    scored_course_ids = {t.course_id for _, _, t in scored}
+    warnings: List[str] = [
+        f"{course.name} has no taught topics and no untaught topics with a "
+        f"sequence_order set, so it wasn't included in this plan."
+        for course in courses
+        if course.mode == 'learning' and course.id not in scored_course_ids
+    ]
 
     # 5. Build the plan
     plan = Plan(
@@ -558,4 +570,4 @@ def generate_plan(user_id: int, start_date: date, db: Session) -> Plan:
     db.commit()
     db.refresh(plan)
     _ = plan.plan_blocks  # trigger lazy load while session is open
-    return plan
+    return plan, warnings

@@ -1,4 +1,5 @@
-from typing import Optional
+from datetime import date
+from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -18,7 +19,13 @@ class TopicCreate(TopicBase):
 class TopicUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    sequence_order: Optional[int] = None
+    status: Literal["not_started", "pre_learned", "taught"] = "not_started"
+    expected_taught_by: Optional[date] = None
 
 
 class TopicResponse(TopicBase):
     id: int
+    sequence_order: Optional[int] = None
+    status: Literal["not_started", "pre_learned", "taught"] = "not_started"
+    expected_taught_by: Optional[date] = None

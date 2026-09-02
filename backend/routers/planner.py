@@ -18,7 +18,9 @@ def generate_plan(
     from services.planner import generate_plan as _generate_plan
 
     try:
-        plan = _generate_plan(current_user.id, payload.start_date, db)
+        plan, warnings = _generate_plan(current_user.id, payload.start_date, db)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
-    return plan
+    response = PlanWithBlocksResponse.model_validate(plan)
+    response.warnings = warnings
+    return response

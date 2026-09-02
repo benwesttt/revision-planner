@@ -44,7 +44,7 @@ def test_topics_rotate_when_slots_outnumber_topics(db_session, current_user):
     db_session.refresh(topic_b)
 
     start_date = date(2026, 9, 1)
-    plan = generate_plan(current_user.id, start_date, db_session)
+    plan, _ = generate_plan(current_user.id, start_date, db_session)
 
     first_day_blocks = (
         db_session.query(PlanBlock)
@@ -158,7 +158,7 @@ def test_revision_mode_course_ignores_status_and_schedules_normally(db_session, 
     db_session.refresh(topic_b)
 
     start_date = date(2026, 9, 1)
-    plan = generate_plan(current_user.id, start_date, db_session)
+    plan, _ = generate_plan(current_user.id, start_date, db_session)
 
     first_day_blocks = [b for b in _plan_blocks(db_session, plan) if b.start_time.date() == start_date]
     assert len(first_day_blocks) >= 4
@@ -198,7 +198,7 @@ def test_learning_mode_course_hits_target_ratio_across_slots(db_session, current
         db_session.refresh(t)
 
     start_date = date(2026, 9, 1)
-    plan = generate_plan(current_user.id, start_date, db_session)
+    plan, _ = generate_plan(current_user.id, start_date, db_session)
 
     first_ten = [b for b in _plan_blocks(db_session, plan) if b.start_time.date() == start_date][:10]
     assert len(first_ten) == 10
@@ -251,7 +251,7 @@ def test_learning_mode_course_with_no_taught_topics_only_uses_learning_queue(db_
     start_date = date(2026, 9, 1)
     # Must not raise: before the fix, this course had zero representation in
     # `scored` (no taught topics) and could never win a slot at all.
-    plan = generate_plan(current_user.id, start_date, db_session)
+    plan, _ = generate_plan(current_user.id, start_date, db_session)
 
     first_day_blocks = [b for b in _plan_blocks(db_session, plan) if b.start_time.date() == start_date]
     assert len(first_day_blocks) >= 5
@@ -276,7 +276,7 @@ def test_learning_mode_course_with_everything_taught_behaves_like_revision(db_se
     db_session.refresh(topic_b)
 
     start_date = date(2026, 9, 1)
-    plan = generate_plan(current_user.id, start_date, db_session)
+    plan, _ = generate_plan(current_user.id, start_date, db_session)
 
     first_day_blocks = [b for b in _plan_blocks(db_session, plan) if b.start_time.date() == start_date]
     assert len(first_day_blocks) >= 4
@@ -309,7 +309,7 @@ def test_topic_with_null_sequence_order_excluded_from_learning_queue(db_session,
         db_session.refresh(t)
 
     start_date = date(2026, 9, 1)
-    plan = generate_plan(current_user.id, start_date, db_session)
+    plan, _ = generate_plan(current_user.id, start_date, db_session)
 
     all_topic_ids = {b.topic_id for b in _plan_blocks(db_session, plan)}
 
@@ -320,3 +320,48 @@ def test_topic_with_null_sequence_order_excluded_from_learning_queue(db_session,
     assert unsequenced.id not in all_topic_ids
     assert seq_1.id in all_topic_ids
     assert seq_2.id in all_topic_ids
+
+
+def test_generate_plan_warns_about_orphaned_learning_mode_course(db_session, current_user):
+    # All untaught AND all missing sequence_order: unschedulable by design —
+    # no taught topics to flow into `scored`, no sequenced topics for the
+    # learning queue either, so this course gets no representation at all.
+    course = Course(
+        user_id=current_user.id, name="Orphaned Course", color="#ef4444", mode='learning',
+    )
+    db_session.add(course)
+    db_session.commit()
+    db_session.refresh(course)
+
+    topics = [
+        Topic(course_id=course.id, name=f"Topic {i}", status='not_started', sequence_order=None)
+        for i in range(1, 4)
+    ]
+    db_session.add_all(topics)
+    db_session.commit()
+
+    start_date = date(2026, 9, 1)
+    plan, warnings = generate_plan(current_user.id, start_date, db_session)
+
+    assert len(warnings) == 1
+    assert "Orphaned Course" in warnings[0]
+    assert len(_plan_blocks(db_session, plan)) == 0
+
+
+def test_generate_plan_returns_no_warnings_when_nothing_orphaned(db_session, current_user):
+    course = Course(
+        user_id=current_user.id, name="Normal Course", color="#6366f1", mode='revision',
+    )
+    db_session.add(course)
+    db_session.commit()
+    db_session.refresh(course)
+
+    topic = Topic(course_id=course.id, name="Only Topic")
+    db_session.add(topic)
+    db_session.commit()
+
+    start_date = date(2026, 9, 1)
+    plan, warnings = generate_plan(current_user.id, start_date, db_session)
+
+    assert warnings == []
+    assert len(_plan_blocks(db_session, plan)) > 0
