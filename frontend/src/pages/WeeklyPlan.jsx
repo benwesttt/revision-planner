@@ -191,6 +191,14 @@ export default function WeeklyPlan() {
         </p>
       )}
 
+      {plan?.warnings?.length > 0 && (
+        <div className="mb-6 text-sm text-amber-400 bg-amber-900/30 border border-amber-800 rounded-lg px-4 py-2">
+          {plan.warnings.map((warning, i) => (
+            <p key={i}>{warning}</p>
+          ))}
+        </div>
+      )}
+
       {/* Loading / generating skeleton */}
       {showSkeleton && (
         <div className="flex flex-col gap-6">

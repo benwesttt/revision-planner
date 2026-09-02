@@ -67,6 +67,7 @@ export default function Dashboard() {
 
   const [neglectedTopics, setNeglectedTopics] = useState([]);
   const [upcomingAssessments, setUpcomingAssessments] = useState([]);
+  const [learningStatuses, setLearningStatuses] = useState([]);
 
   useEffect(() => {
     async function load() {
@@ -88,6 +89,16 @@ export default function Dashboard() {
         const tMap = {};
         allTopics.forEach(t => { tMap[t.id] = { name: t.name, courseId: t.course_id }; });
         setTopicMap(tMap);
+
+        // Learning Mode pace
+        const learningCourses = courses.filter(c => c.mode === 'learning');
+        const statuses = await Promise.all(
+          learningCourses.map(c =>
+            fetchWithAuth(`${API_BASE_URL}/courses/${c.id}/learning-status`)
+              .then(r => (r.ok ? r.json() : null))
+          )
+        );
+        setLearningStatuses(statuses.filter(Boolean));
 
         // Revision sessions
         const sessRes = await fetchWithAuth(`${API_BASE_URL}/revision-sessions/?user_id=${USER_ID}`);
@@ -460,6 +471,57 @@ export default function Dashboard() {
                   <span className={`text-xs font-medium shrink-0 ${daysAgoVal === null ? 'text-amber-400' : 'text-gray-400'}`}>
                     {lastRevisedLabel}
                   </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Learning Mode Pace */}
+      {learningStatuses.some(s => s.behind_pace.length > 0) && (
+        <div className="mt-8">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+            Learning Mode Pace
+          </h2>
+          <div className="flex flex-col gap-2">
+            {learningStatuses.filter(s => s.behind_pace.length > 0).map(s => {
+              const course = courseMap[s.course_id];
+              return (
+                <div
+                  key={s.course_id}
+                  className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 flex flex-col gap-2"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {course && (
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: course.color }} />
+                      )}
+                      <span className="text-sm font-medium text-white truncate">
+                        {course?.name ?? `Course ${s.course_id}`}
+                      </span>
+                    </div>
+                    <span className="text-xs text-gray-500 shrink-0">
+                      {s.taught_count} of {s.total_count} topics taught
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    {s.behind_pace.map(t => {
+                      const days = daysUntil(t.expected_taught_by);
+                      const labelCls = days !== null && days >= -7 ? 'text-amber-400' : 'text-red-400';
+                      const dateLabel = t.expected_taught_by
+                        ? new Date(t.expected_taught_by + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+                        : '';
+                      return (
+                        <div key={t.id} className="flex items-center justify-between gap-4 text-xs">
+                          <span className="text-gray-300 truncate">{t.name}</span>
+                          <span className={`font-medium shrink-0 ${labelCls}`}>
+                            Expected by {dateLabel}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })}
