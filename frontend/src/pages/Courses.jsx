@@ -21,13 +21,20 @@ export default function Courses() {
 
   const [editingCourseId, setEditingCourseId] = useState(null);
   const [editCourseName, setEditCourseName] = useState('');
+  const [editCourseMode, setEditCourseMode] = useState('revision');
   const [courseEditSaving, setCourseEditSaving] = useState(false);
 
   const [pendingDeleteCourse, setPendingDeleteCourse] = useState(null);
   const [deletingCourse, setDeletingCourse] = useState(null);
 
   const [editingTopicId, setEditingTopicId] = useState(null);
-  const [editTopicForm, setEditTopicForm] = useState({ name: '', description: '' });
+  const [editTopicForm, setEditTopicForm] = useState({
+    name: '',
+    description: '',
+    sequence_order: '',
+    status: 'not_started',
+    expected_taught_by: '',
+  });
   const [topicEditSaving, setTopicEditSaving] = useState(false);
 
   const [pendingDeleteTopic, setPendingDeleteTopic] = useState(null);
@@ -106,6 +113,7 @@ export default function Courses() {
     setPendingDeleteCourse(null);
     setEditingCourseId(course.id);
     setEditCourseName(course.name);
+    setEditCourseMode(course.mode ?? 'revision');
   };
 
   const cancelEditCourse = () => setEditingCourseId(null);
@@ -117,7 +125,7 @@ export default function Courses() {
     try {
       const res = await fetchWithAuth(`${API_BASE_URL}/courses/${courseId}`, {
         method: 'PUT',
-        body: JSON.stringify({ name: editCourseName.trim() }),
+        body: JSON.stringify({ name: editCourseName.trim(), mode: editCourseMode }),
       });
       if (!res.ok) throw new Error('Failed to update course');
       setEditingCourseId(null);
@@ -160,7 +168,13 @@ export default function Courses() {
   const startEditTopic = (topic) => {
     setPendingDeleteTopic(null);
     setEditingTopicId(topic.id);
-    setEditTopicForm({ name: topic.name, description: topic.description ?? '' });
+    setEditTopicForm({
+      name: topic.name,
+      description: topic.description ?? '',
+      sequence_order: topic.sequence_order ?? '',
+      status: topic.status ?? 'not_started',
+      expected_taught_by: topic.expected_taught_by ?? '',
+    });
   };
 
   const cancelEditTopic = () => setEditingTopicId(null);
@@ -173,6 +187,12 @@ export default function Courses() {
       const body = { name: editTopicForm.name.trim() };
       if (editTopicForm.description.trim()) body.description = editTopicForm.description.trim();
       else body.description = null;
+      const course = courses.find(c => c.id === courseId);
+      if (course?.mode === 'learning') {
+        body.sequence_order = editTopicForm.sequence_order === '' ? null : Number(editTopicForm.sequence_order);
+        body.status = editTopicForm.status;
+        body.expected_taught_by = editTopicForm.expected_taught_by || null;
+      }
       const res = await fetchWithAuth(`${API_BASE_URL}/topics/${topic.id}`, {
         method: 'PUT',
         body: JSON.stringify(body),
@@ -300,6 +320,14 @@ export default function Courses() {
                       autoFocus
                       required
                     />
+                    <select
+                      value={editCourseMode}
+                      onChange={e => setEditCourseMode(e.target.value)}
+                      className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="revision">Revision</option>
+                      <option value="learning">Learning</option>
+                    </select>
                     <button
                       type="submit"
                       disabled={courseEditSaving}
@@ -319,6 +347,9 @@ export default function Courses() {
                   <div className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: course.color }} />
                     <span className="font-semibold text-white text-sm flex-1">{course.name}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-700 text-gray-300 select-none shrink-0 uppercase tracking-wide">
+                      {course.mode === 'learning' ? 'Learning' : 'Revision'}
+                    </span>
                     <span className="text-[10px] text-gray-500 select-none shrink-0">
                       {course.is_active ? 'Active' : 'Inactive'}
                     </span>
@@ -400,6 +431,32 @@ export default function Courses() {
                               onChange={e => setEditTopicForm(f => ({ ...f, description: e.target.value }))}
                               className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500"
                             />
+                            {course.mode === 'learning' && (
+                              <div className="flex gap-2">
+                                <input
+                                  type="number"
+                                  placeholder="Order"
+                                  value={editTopicForm.sequence_order}
+                                  onChange={e => setEditTopicForm(f => ({ ...f, sequence_order: e.target.value }))}
+                                  className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm text-white focus:outline-none focus:border-indigo-500"
+                                />
+                                <select
+                                  value={editTopicForm.status}
+                                  onChange={e => setEditTopicForm(f => ({ ...f, status: e.target.value }))}
+                                  className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm text-white focus:outline-none focus:border-indigo-500"
+                                >
+                                  <option value="not_started">Not started</option>
+                                  <option value="pre_learned">Pre-learned</option>
+                                  <option value="taught">Taught</option>
+                                </select>
+                                <input
+                                  type="date"
+                                  value={editTopicForm.expected_taught_by}
+                                  onChange={e => setEditTopicForm(f => ({ ...f, expected_taught_by: e.target.value }))}
+                                  className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm text-white focus:outline-none focus:border-indigo-500"
+                                />
+                              </div>
+                            )}
                             <div className="flex gap-2 justify-end">
                               <button
                                 type="button"
