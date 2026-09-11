@@ -13,10 +13,10 @@ function daysUntil(isoStr) {
 }
 
 function urgencyClasses(days) {
-  if (days === null) return { border: 'border-gray-700', badge: 'bg-gray-800 text-gray-400' };
-  if (days <= 7)     return { border: 'border-red-700',  badge: 'bg-red-900/40 text-red-400' };
-  if (days <= 14)    return { border: 'border-amber-700', badge: 'bg-amber-900/40 text-amber-400' };
-  return               { border: 'border-green-800', badge: 'bg-green-900/40 text-green-400' };
+  if (days === null) return { border: 'border-border', badge: 'bg-border text-ink-secondary' };
+  if (days <= 7)     return { border: 'border-danger',  badge: 'bg-danger-bg text-danger' };
+  if (days <= 14)    return { border: 'border-warning', badge: 'bg-warning-bg text-warning' };
+  return               { border: 'border-success', badge: 'bg-success-bg text-success' };
 }
 
 function formatDueDate(isoStr) {
@@ -164,27 +164,27 @@ export default function Assessments() {
   const activeCourses = courses.filter(c => c.is_active);
   const inactiveCourses = courses.filter(c => !c.is_active);
 
-  const inputCls = 'bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 w-full';
+  const inputCls = 'bg-background border border-border rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-muted focus:outline-none focus:border-accent w-full';
 
   if (loading) {
-    return <p className="text-gray-400">Loading assessments…</p>;
+    return <p className="text-ink-secondary">Loading assessments…</p>;
   }
 
   return (
     <div className="max-w-3xl">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-white">Assessments</h1>
+        <h1 className="text-2xl font-semibold text-ink">Assessments</h1>
         <button
           onClick={() => setShowForm(v => !v)}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors"
+          className="px-4 py-2 bg-accent hover:bg-accent-hover text-background text-sm font-medium rounded-lg transition-colors"
         >
           {showForm ? 'Cancel' : '+ Add Assessment'}
         </button>
       </div>
 
       {error && (
-        <p className="mb-4 text-sm text-red-400 bg-red-900/30 border border-red-800 rounded-lg px-4 py-2">
+        <p className="mb-4 text-sm text-danger bg-danger-bg border border-danger/40 rounded-lg px-4 py-2">
           {error}
         </p>
       )}
@@ -193,13 +193,13 @@ export default function Assessments() {
       {showForm && (
         <form
           onSubmit={handleSubmit}
-          className="mb-6 p-4 bg-gray-800 border border-gray-700 rounded-xl flex flex-col gap-3"
+          className="mb-6 p-4 bg-surface border border-border rounded-xl flex flex-col gap-3"
         >
-          <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">New Assessment</h2>
+          <h2 className="text-sm font-semibold text-ink-secondary uppercase tracking-wide">New Assessment</h2>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1">
-              <span className="text-xs text-gray-400">Course</span>
+              <span className="text-xs text-ink-secondary">Course</span>
               <select
                 value={form.course_id}
                 onChange={e => setForm(f => ({ ...f, course_id: e.target.value }))}
@@ -208,14 +208,14 @@ export default function Assessments() {
               >
                 <option value="">Select course…</option>
                 {activeCourses.length > 0 && (
-                  <optgroup label="Active" className="text-gray-200 font-normal">
+                  <optgroup label="Active" className="text-ink-secondary font-normal">
                     {activeCourses.map(c => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
                   </optgroup>
                 )}
                 {inactiveCourses.length > 0 && (
-                  <optgroup label="Inactive" className="text-gray-500 font-normal">
+                  <optgroup label="Inactive" className="text-ink-muted font-normal">
                     {inactiveCourses.map(c => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
@@ -225,7 +225,7 @@ export default function Assessments() {
             </label>
 
             <label className="flex flex-col gap-1">
-              <span className="text-xs text-gray-400">Type</span>
+              <span className="text-xs text-ink-secondary">Type</span>
               <select
                 value={form.type}
                 onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
@@ -239,7 +239,7 @@ export default function Assessments() {
           </div>
 
           <label className="flex flex-col gap-1">
-            <span className="text-xs text-gray-400">Title</span>
+            <span className="text-xs text-ink-secondary">Title</span>
             <input
               type="text"
               placeholder="e.g. Chapter 5 Test"
@@ -252,7 +252,7 @@ export default function Assessments() {
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-xs text-gray-400">Due date (optional)</span>
+            <span className="text-xs text-ink-secondary">Due date (optional)</span>
             <input
               type="date"
               value={form.due_date}
@@ -265,7 +265,7 @@ export default function Assessments() {
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+              className="px-4 py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-background text-sm font-medium rounded-lg transition-colors"
             >
               {submitting ? 'Saving…' : 'Save Assessment'}
             </button>
@@ -276,15 +276,15 @@ export default function Assessments() {
       {/* Empty state */}
       {assessments.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center mb-4">
-            <svg className="w-7 h-7 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-14 h-14 rounded-full bg-surface flex items-center justify-center mb-4">
+            <svg className="w-7 h-7 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <p className="text-gray-400 text-sm font-medium">No assessments yet</p>
-          <p className="text-gray-600 text-sm mt-1">
-            Click <span className="text-indigo-400">+ Add Assessment</span> to track upcoming work
+          <p className="text-ink-secondary text-sm font-medium">No assessments yet</p>
+          <p className="text-ink-muted text-sm mt-1">
+            Click <span className="text-accent">+ Add Assessment</span> to track upcoming work
           </p>
         </div>
       )}
@@ -301,13 +301,13 @@ export default function Assessments() {
             return (
               <div
                 key={a.id}
-                className={`bg-gray-800 border ${border} rounded-xl px-4 py-3`}
+                className={`bg-surface border ${border} rounded-xl px-4 py-3`}
               >
                 {isEditing ? (
                   <form onSubmit={e => handleSave(e, a.id)} className="flex flex-col gap-3">
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <label className="flex flex-col gap-1">
-                        <span className="text-xs text-gray-400">Course</span>
+                        <span className="text-xs text-ink-secondary">Course</span>
                         <select
                           value={editForm.course_id}
                           onChange={e => setEditForm(f => ({ ...f, course_id: e.target.value }))}
@@ -315,14 +315,14 @@ export default function Assessments() {
                           required
                         >
                           {activeCourses.length > 0 && (
-                            <optgroup label="Active" className="text-gray-200 font-normal">
+                            <optgroup label="Active" className="text-ink-secondary font-normal">
                               {activeCourses.map(c => (
                                 <option key={c.id} value={c.id}>{c.name}</option>
                               ))}
                             </optgroup>
                           )}
                           {inactiveCourses.length > 0 && (
-                            <optgroup label="Inactive" className="text-gray-500 font-normal">
+                            <optgroup label="Inactive" className="text-ink-muted font-normal">
                               {inactiveCourses.map(c => (
                                 <option key={c.id} value={c.id}>{c.name}</option>
                               ))}
@@ -332,7 +332,7 @@ export default function Assessments() {
                       </label>
 
                       <label className="flex flex-col gap-1">
-                        <span className="text-xs text-gray-400">Type</span>
+                        <span className="text-xs text-ink-secondary">Type</span>
                         <select
                           value={editForm.type}
                           onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))}
@@ -346,7 +346,7 @@ export default function Assessments() {
                     </div>
 
                     <label className="flex flex-col gap-1">
-                      <span className="text-xs text-gray-400">Title</span>
+                      <span className="text-xs text-ink-secondary">Title</span>
                       <input
                         type="text"
                         value={editForm.name}
@@ -358,7 +358,7 @@ export default function Assessments() {
                     </label>
 
                     <label className="flex flex-col gap-1">
-                      <span className="text-xs text-gray-400">Due date</span>
+                      <span className="text-xs text-ink-secondary">Due date</span>
                       <input
                         type="date"
                         value={editForm.due_date}
@@ -367,18 +367,18 @@ export default function Assessments() {
                       />
                     </label>
 
-                    <div className="flex justify-end gap-2 pt-1 border-t border-gray-700">
+                    <div className="flex justify-end gap-2 pt-1 border-t border-border">
                       <button
                         type="button"
                         onClick={cancelEdit}
-                        className="px-3 py-1.5 text-xs text-gray-400 hover:text-gray-200 transition-colors"
+                        className="px-3 py-1.5 text-xs text-ink-secondary hover:text-ink transition-colors"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
                         disabled={saving}
-                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+                        className="px-3 py-1.5 bg-accent hover:bg-accent-hover disabled:opacity-50 text-background text-xs font-medium rounded-lg transition-colors"
                       >
                         {saving ? 'Saving…' : 'Save'}
                       </button>
@@ -388,12 +388,12 @@ export default function Assessments() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-sm font-semibold text-white">{a.name}</span>
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-700 text-gray-300 capitalize">
+                        <span className="text-sm font-semibold text-ink">{a.name}</span>
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-border text-ink-secondary capitalize">
                           {a.type}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-gray-500">
+                      <div className="flex items-center gap-3 text-xs text-ink-muted">
                         <span>{courseMap[a.course_id] ?? `Course ${a.course_id}`}</span>
                         <span className={`px-2 py-0.5 rounded-full font-medium ${badge}`}>
                           {days === null
@@ -412,17 +412,17 @@ export default function Assessments() {
                     <div className="flex items-center gap-2 shrink-0">
                       {isPending ? (
                         <>
-                          <span className="text-xs text-gray-400">Delete?</span>
+                          <span className="text-xs text-ink-secondary">Delete?</span>
                           <button
                             onClick={() => handleDelete(a.id)}
                             disabled={deleting === a.id}
-                            className="text-xs px-2 py-1 bg-red-700 hover:bg-red-600 disabled:opacity-50 text-white rounded-lg transition-colors"
+                            className="text-xs px-2 py-1 bg-danger hover:bg-danger/90 disabled:opacity-50 text-ink rounded-lg transition-colors"
                           >
                             {deleting === a.id ? '…' : 'Yes'}
                           </button>
                           <button
                             onClick={() => setPendingDelete(null)}
-                            className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+                            className="text-xs px-2 py-1 bg-border hover:bg-white/5 text-ink-secondary rounded-lg transition-colors"
                           >
                             No
                           </button>
@@ -431,7 +431,7 @@ export default function Assessments() {
                         <>
                           <button
                             onClick={() => startEdit(a)}
-                            className="text-gray-600 hover:text-indigo-400 transition-colors"
+                            className="text-ink-muted hover:text-accent transition-colors"
                             aria-label="Edit assessment"
                           >
                             <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
@@ -440,7 +440,7 @@ export default function Assessments() {
                           </button>
                           <button
                             onClick={() => setPendingDelete(a.id)}
-                            className="text-gray-600 hover:text-red-400 transition-colors"
+                            className="text-ink-muted hover:text-danger transition-colors"
                             aria-label="Delete assessment"
                           >
                             <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
