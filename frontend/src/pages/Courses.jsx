@@ -12,7 +12,7 @@ export default function Courses() {
   const [error, setError] = useState(null);
 
   const [showAddCourse, setShowAddCourse] = useState(false);
-  const [courseForm, setCourseForm] = useState({ name: '', color: '#6366f1' });
+  const [courseForm, setCourseForm] = useState({ name: '', color: '#D4A017' });
   const [courseSubmitting, setCourseSubmitting] = useState(false);
 
   const [expandedTopic, setExpandedTopic] = useState(null);
@@ -75,7 +75,7 @@ export default function Courses() {
         body: JSON.stringify({ user_id: USER_ID, name: courseForm.name.trim(), color: courseForm.color }),
       });
       if (!res.ok) throw new Error('Failed to create course');
-      setCourseForm({ name: '', color: '#6366f1' });
+      setCourseForm({ name: '', color: '#D4A017' });
       setShowAddCourse(false);
       await fetchCourses();
     } catch (err) {
@@ -233,24 +233,24 @@ export default function Courses() {
   };
 
   if (loading) {
-    return <p className="text-gray-400">Loading courses…</p>;
+    return <p className="text-ink-secondary">Loading courses…</p>;
   }
 
   return (
     <div className="max-w-4xl">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-white">Courses</h1>
+        <h1 className="text-2xl font-semibold text-ink">Courses</h1>
         <button
           onClick={() => setShowAddCourse(v => !v)}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors"
+          className="px-4 py-2 bg-accent hover:bg-accent-hover text-background text-sm font-medium rounded-lg transition-colors"
         >
           {showAddCourse ? 'Cancel' : '+ Add Course'}
         </button>
       </div>
 
       {error && (
-        <p className="mb-4 text-sm text-red-400 bg-red-900/30 border border-red-800 rounded-lg px-4 py-2">
+        <p className="mb-4 text-sm text-danger bg-danger-bg border border-danger/40 rounded-lg px-4 py-2">
           {error}
         </p>
       )}
@@ -259,19 +259,19 @@ export default function Courses() {
       {showAddCourse && (
         <form
           onSubmit={handleAddCourse}
-          className="mb-6 p-4 bg-gray-800 border border-gray-700 rounded-xl flex flex-col gap-3"
+          className="mb-6 p-4 bg-surface border border-border rounded-xl flex flex-col gap-3"
         >
-          <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">New Course</h2>
+          <h2 className="text-sm font-semibold text-ink-secondary uppercase tracking-wide">New Course</h2>
           <div className="flex gap-3">
             <input
               type="text"
               placeholder="Course name"
               value={courseForm.name}
               onChange={e => setCourseForm(f => ({ ...f, name: e.target.value }))}
-              className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500"
+              className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-muted focus:outline-none focus:border-accent"
               autoFocus
             />
-            <label className="flex items-center gap-2 text-sm text-gray-400">
+            <label className="flex items-center gap-2 text-sm text-ink-secondary">
               <span>Color</span>
               <input
                 type="color"
@@ -285,7 +285,7 @@ export default function Courses() {
             <button
               type="submit"
               disabled={courseSubmitting}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+              className="px-4 py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-background text-sm font-medium rounded-lg transition-colors"
             >
               {courseSubmitting ? 'Saving…' : 'Save Course'}
             </button>
@@ -295,7 +295,7 @@ export default function Courses() {
 
       {/* Course grid */}
       {courses.length === 0 ? (
-        <p className="text-gray-500 text-sm">No courses yet. Add one above.</p>
+        <p className="text-ink-muted text-sm">No courses yet. Add one above.</p>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {courses.map(course => {
@@ -306,7 +306,7 @@ export default function Courses() {
             return (
               <div
                 key={course.id}
-                className={`bg-gray-800 border border-gray-700 rounded-xl p-4 flex flex-col gap-3 transition-opacity ${!course.is_active ? 'opacity-50' : ''}`}
+                className={`bg-surface border border-border rounded-xl p-4 flex flex-col gap-3 transition-opacity ${!course.is_active ? 'opacity-50' : ''}`}
               >
                 {/* Course header */}
                 {editingCourseId === course.id ? (
@@ -316,14 +316,14 @@ export default function Courses() {
                       type="text"
                       value={editCourseName}
                       onChange={e => setEditCourseName(e.target.value)}
-                      className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1 text-sm text-white focus:outline-none focus:border-indigo-500"
+                      className="flex-1 bg-background border border-border rounded-lg px-2 py-1 text-sm text-ink focus:outline-none focus:border-accent"
                       autoFocus
                       required
                     />
                     <select
                       value={editCourseMode}
                       onChange={e => setEditCourseMode(e.target.value)}
-                      className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500"
+                      className="bg-background border border-border rounded-lg px-2 py-1 text-xs text-ink focus:outline-none focus:border-accent"
                     >
                       <option value="revision">Revision</option>
                       <option value="learning">Learning</option>
@@ -331,14 +331,14 @@ export default function Courses() {
                     <button
                       type="submit"
                       disabled={courseEditSaving}
-                      className="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+                      className="px-2 py-1 bg-accent hover:bg-accent-hover disabled:opacity-50 text-background text-xs font-medium rounded-lg transition-colors"
                     >
                       {courseEditSaving ? '…' : 'Save'}
                     </button>
                     <button
                       type="button"
                       onClick={cancelEditCourse}
-                      className="px-2 py-1 text-xs text-gray-400 hover:text-gray-200 transition-colors"
+                      className="px-2 py-1 text-xs text-ink-secondary hover:text-ink transition-colors"
                     >
                       Cancel
                     </button>
@@ -346,11 +346,11 @@ export default function Courses() {
                 ) : (
                   <div className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: course.color }} />
-                    <span className="font-semibold text-white text-sm flex-1">{course.name}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-700 text-gray-300 select-none shrink-0 uppercase tracking-wide">
+                    <span className="font-semibold text-ink text-sm flex-1">{course.name}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-border text-ink-secondary select-none shrink-0 uppercase tracking-wide">
                       {course.mode === 'learning' ? 'Learning' : 'Revision'}
                     </span>
-                    <span className="text-[10px] text-gray-500 select-none shrink-0">
+                    <span className="text-[10px] text-ink-muted select-none shrink-0">
                       {course.is_active ? 'Active' : 'Inactive'}
                     </span>
                     <button
@@ -360,23 +360,23 @@ export default function Courses() {
                       aria-checked={course.is_active}
                       aria-label={course.is_active ? 'Set course inactive' : 'Set course active'}
                       title={course.is_active ? 'Active — click to deactivate' : 'Inactive — click to activate'}
-                      className={`flex items-center w-7 h-4 rounded-full px-0.5 transition-colors shrink-0 ${course.is_active ? 'bg-indigo-600 justify-end' : 'bg-gray-600 justify-start'}`}
+                      className={`flex items-center w-7 h-4 rounded-full px-0.5 transition-colors shrink-0 ${course.is_active ? 'bg-accent justify-end' : 'bg-border justify-start'}`}
                     >
                       <span className="w-3 h-3 rounded-full bg-white" />
                     </button>
                     {pendingDeleteCourse === course.id ? (
                       <>
-                        <span className="text-xs text-gray-400">Delete?</span>
+                        <span className="text-xs text-ink-secondary">Delete?</span>
                         <button
                           onClick={() => handleDeleteCourse(course.id)}
                           disabled={deletingCourse === course.id}
-                          className="text-xs px-2 py-1 bg-red-700 hover:bg-red-600 disabled:opacity-50 text-white rounded-lg transition-colors"
+                          className="text-xs px-2 py-1 bg-danger hover:bg-danger/90 disabled:opacity-50 text-ink rounded-lg transition-colors"
                         >
                           {deletingCourse === course.id ? '…' : 'Yes'}
                         </button>
                         <button
                           onClick={() => setPendingDeleteCourse(null)}
-                          className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+                          className="text-xs px-2 py-1 bg-border hover:bg-white/5 text-ink-secondary rounded-lg transition-colors"
                         >
                           No
                         </button>
@@ -385,7 +385,7 @@ export default function Courses() {
                       <>
                         <button
                           onClick={() => startEditCourse(course)}
-                          className="text-gray-600 hover:text-indigo-400 transition-colors"
+                          className="text-ink-muted hover:text-accent transition-colors"
                           aria-label="Edit course"
                         >
                           <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -394,7 +394,7 @@ export default function Courses() {
                         </button>
                         <button
                           onClick={() => setPendingDeleteCourse(course.id)}
-                          className="text-gray-600 hover:text-red-400 transition-colors"
+                          className="text-ink-muted hover:text-danger transition-colors"
                           aria-label="Delete course"
                         >
                           <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -415,12 +415,12 @@ export default function Courses() {
 
                       if (isEditingTopic) {
                         return (
-                          <li key={topic.id} className="bg-gray-900 rounded-lg px-2 py-2 flex flex-col gap-2">
+                          <li key={topic.id} className="bg-background rounded-lg px-2 py-2 flex flex-col gap-2">
                             <input
                               type="text"
                               value={editTopicForm.name}
                               onChange={e => setEditTopicForm(f => ({ ...f, name: e.target.value }))}
-                              className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm text-white focus:outline-none focus:border-indigo-500"
+                              className="bg-surface border border-border rounded-lg px-2 py-1 text-sm text-ink focus:outline-none focus:border-accent"
                               autoFocus
                               required
                             />
@@ -429,7 +429,7 @@ export default function Courses() {
                               placeholder="Description (optional)"
                               value={editTopicForm.description}
                               onChange={e => setEditTopicForm(f => ({ ...f, description: e.target.value }))}
-                              className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500"
+                              className="bg-surface border border-border rounded-lg px-2 py-1 text-sm text-ink placeholder-ink-muted focus:outline-none focus:border-accent"
                             />
                             {course.mode === 'learning' && (
                               <div className="flex gap-2">
@@ -438,12 +438,12 @@ export default function Courses() {
                                   placeholder="Order"
                                   value={editTopicForm.sequence_order}
                                   onChange={e => setEditTopicForm(f => ({ ...f, sequence_order: e.target.value }))}
-                                  className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm text-white focus:outline-none focus:border-indigo-500"
+                                  className="w-20 bg-surface border border-border rounded-lg px-2 py-1 text-sm text-ink focus:outline-none focus:border-accent"
                                 />
                                 <select
                                   value={editTopicForm.status}
                                   onChange={e => setEditTopicForm(f => ({ ...f, status: e.target.value }))}
-                                  className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm text-white focus:outline-none focus:border-indigo-500"
+                                  className="flex-1 bg-surface border border-border rounded-lg px-2 py-1 text-sm text-ink focus:outline-none focus:border-accent"
                                 >
                                   <option value="not_started">Not started</option>
                                   <option value="pre_learned">Pre-learned</option>
@@ -453,7 +453,7 @@ export default function Courses() {
                                   type="date"
                                   value={editTopicForm.expected_taught_by}
                                   onChange={e => setEditTopicForm(f => ({ ...f, expected_taught_by: e.target.value }))}
-                                  className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm text-white focus:outline-none focus:border-indigo-500"
+                                  className="bg-surface border border-border rounded-lg px-2 py-1 text-sm text-ink focus:outline-none focus:border-accent"
                                 />
                               </div>
                             )}
@@ -461,7 +461,7 @@ export default function Courses() {
                               <button
                                 type="button"
                                 onClick={cancelEditTopic}
-                                className="px-2 py-1 text-xs text-gray-400 hover:text-gray-200 transition-colors"
+                                className="px-2 py-1 text-xs text-ink-secondary hover:text-ink transition-colors"
                               >
                                 Cancel
                               </button>
@@ -469,7 +469,7 @@ export default function Courses() {
                                 type="button"
                                 disabled={topicEditSaving}
                                 onClick={e => handleSaveTopic(e, topic, course.id)}
-                                className="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+                                className="px-2 py-1 bg-accent hover:bg-accent-hover disabled:opacity-50 text-background text-xs font-medium rounded-lg transition-colors"
                               >
                                 {topicEditSaving ? '…' : 'Save'}
                               </button>
@@ -479,27 +479,27 @@ export default function Courses() {
                       }
 
                       return (
-                        <li key={topic.id} className="flex items-start gap-2 px-2 py-1.5 bg-gray-900 rounded-lg">
+                        <li key={topic.id} className="flex items-start gap-2 px-2 py-1.5 bg-background rounded-lg">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-gray-200">{topic.name}</p>
+                            <p className="text-sm text-ink-secondary">{topic.name}</p>
                             {topic.description && (
-                              <p className="text-xs text-gray-500 mt-0.5">{topic.description}</p>
+                              <p className="text-xs text-ink-muted mt-0.5">{topic.description}</p>
                             )}
                           </div>
                           <div className="flex items-center gap-1 shrink-0 pt-0.5">
                             {isPendingDelete ? (
                               <>
-                                <span className="text-xs text-gray-400">Delete?</span>
+                                <span className="text-xs text-ink-secondary">Delete?</span>
                                 <button
                                   onClick={() => handleDeleteTopic(topic.id, course.id)}
                                   disabled={deletingTopic === topic.id}
-                                  className="text-xs px-1.5 py-0.5 bg-red-700 hover:bg-red-600 disabled:opacity-50 text-white rounded transition-colors"
+                                  className="text-xs px-1.5 py-0.5 bg-danger hover:bg-danger/90 disabled:opacity-50 text-ink rounded transition-colors"
                                 >
                                   {deletingTopic === topic.id ? '…' : 'Yes'}
                                 </button>
                                 <button
                                   onClick={() => setPendingDeleteTopic(null)}
-                                  className="text-xs px-1.5 py-0.5 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors"
+                                  className="text-xs px-1.5 py-0.5 bg-border hover:bg-white/5 text-ink-secondary rounded transition-colors"
                                 >
                                   No
                                 </button>
@@ -508,7 +508,7 @@ export default function Courses() {
                               <>
                                 <button
                                   onClick={() => startEditTopic(topic)}
-                                  className="text-gray-600 hover:text-indigo-400 transition-colors"
+                                  className="text-ink-muted hover:text-accent transition-colors"
                                   aria-label="Edit topic"
                                 >
                                   <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
@@ -517,7 +517,7 @@ export default function Courses() {
                                 </button>
                                 <button
                                   onClick={() => setPendingDeleteTopic(topic.id)}
-                                  className="text-gray-600 hover:text-red-400 transition-colors"
+                                  className="text-ink-muted hover:text-danger transition-colors"
                                   aria-label="Delete topic"
                                 >
                                   <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
@@ -537,7 +537,7 @@ export default function Courses() {
                 {isExpanded && (
                   <form
                     onSubmit={e => handleAddTopic(e, course.id)}
-                    className="flex flex-col gap-2 pt-1 border-t border-gray-700"
+                    className="flex flex-col gap-2 pt-1 border-t border-border"
                   >
                     <input
                       type="text"
@@ -549,7 +549,7 @@ export default function Courses() {
                           [course.id]: { ...topicForm, name: e.target.value },
                         }))
                       }
-                      className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500"
+                      className="bg-background border border-border rounded-lg px-3 py-1.5 text-sm text-ink placeholder-ink-muted focus:outline-none focus:border-accent"
                       autoFocus
                     />
                     <input
@@ -562,20 +562,20 @@ export default function Courses() {
                           [course.id]: { ...topicForm, description: e.target.value },
                         }))
                       }
-                      className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500"
+                      className="bg-background border border-border rounded-lg px-3 py-1.5 text-sm text-ink placeholder-ink-muted focus:outline-none focus:border-accent"
                     />
                     <div className="flex gap-2 justify-end">
                       <button
                         type="button"
                         onClick={() => setExpandedTopic(null)}
-                        className="px-3 py-1.5 text-xs text-gray-400 hover:text-gray-200 transition-colors"
+                        className="px-3 py-1.5 text-xs text-ink-secondary hover:text-ink transition-colors"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
                         disabled={topicSubmitting === course.id}
-                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+                        className="px-3 py-1.5 bg-accent hover:bg-accent-hover disabled:opacity-50 text-background text-xs font-medium rounded-lg transition-colors"
                       >
                         {topicSubmitting === course.id ? 'Saving…' : 'Add Topic'}
                       </button>
@@ -587,7 +587,7 @@ export default function Courses() {
                 {!isExpanded && (
                   <button
                     onClick={() => toggleTopicForm(course.id)}
-                    className="text-xs text-indigo-400 hover:text-indigo-300 text-left transition-colors"
+                    className="text-xs text-accent hover:text-accent-hover text-left transition-colors"
                   >
                     + Add Topic
                   </button>
