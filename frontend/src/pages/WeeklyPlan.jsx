@@ -175,24 +175,24 @@ export default function WeeklyPlan() {
     <div className="max-w-3xl">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-white">Weekly Plan</h1>
+        <h1 className="text-2xl font-semibold text-ink">Weekly Plan</h1>
         <button
           onClick={handleGenerate}
           disabled={generating || loading}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+          className="px-4 py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-background text-sm font-medium rounded-lg transition-colors"
         >
           {generating ? 'Generating…' : plan ? 'Regenerate Plan' : 'Generate Plan'}
         </button>
       </div>
 
       {error && (
-        <p className="mb-6 text-sm text-red-400 bg-red-900/30 border border-red-800 rounded-lg px-4 py-2">
+        <p className="mb-6 text-sm text-danger bg-danger-bg border border-danger/40 rounded-lg px-4 py-2">
           {error}
         </p>
       )}
 
       {plan?.warnings?.length > 0 && (
-        <div className="mb-6 text-sm text-amber-400 bg-amber-900/30 border border-amber-800 rounded-lg px-4 py-2">
+        <div className="mb-6 text-sm text-warning bg-warning-bg border border-warning/40 rounded-lg px-4 py-2">
           {plan.warnings.map((warning, i) => (
             <p key={i}>{warning}</p>
           ))}
@@ -204,10 +204,10 @@ export default function WeeklyPlan() {
         <div className="flex flex-col gap-6">
           {Array.from({ length: 3 }, (_, i) => (
             <div key={i} className="animate-pulse">
-              <div className="h-4 w-36 bg-gray-800 rounded mb-3" />
+              <div className="h-4 w-36 bg-surface rounded mb-3" />
               <div className="flex flex-col gap-2">
                 {Array.from({ length: 2 }, (_, j) => (
-                  <div key={j} className="h-20 bg-gray-800 rounded-xl" />
+                  <div key={j} className="h-20 bg-surface rounded-xl" />
                 ))}
               </div>
             </div>
@@ -218,15 +218,15 @@ export default function WeeklyPlan() {
       {/* Empty state */}
       {!showSkeleton && !plan && (
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center mb-4">
-            <svg className="w-7 h-7 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-14 h-14 rounded-full bg-surface flex items-center justify-center mb-4">
+            <svg className="w-7 h-7 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
-          <p className="text-gray-400 text-sm font-medium">No plan yet</p>
-          <p className="text-gray-600 text-sm mt-1">
-            Click <span className="text-indigo-400">Generate Plan</span> to build your 7-day revision schedule
+          <p className="text-ink-secondary text-sm font-medium">No plan yet</p>
+          <p className="text-ink-muted text-sm mt-1">
+            Click <span className="text-accent">Generate Plan</span> to build your 7-day revision schedule
           </p>
         </div>
       )}
@@ -239,13 +239,13 @@ export default function WeeklyPlan() {
             const wk = dayWeek(plan.start_date, i, currentWeek);
             return (
               <section key={day}>
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3 flex items-center gap-2">
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-ink-muted mb-3 flex items-center gap-2">
                   {formatDayHeading(day)}
-                  <span className="text-indigo-500">· Week {wk}</span>
+                  <span className="text-accent">· Week {wk}</span>
                 </h2>
 
                 {items.length === 0 ? (
-                  <p className="text-sm text-gray-700 pl-1">No sessions scheduled</p>
+                  <p className="text-sm text-ink-muted pl-1">No sessions scheduled</p>
                 ) : (
                   <div className="flex flex-col gap-2">
                     {items.map(({ _type, _data }) => {
@@ -253,13 +253,13 @@ export default function WeeklyPlan() {
                         return (
                           <div
                             key={`event-${_data.id}`}
-                            className="bg-gray-700 rounded-xl px-4 py-3 border border-gray-600 flex flex-col gap-1"
+                            className="bg-border rounded-xl px-4 py-3 flex flex-col gap-1"
                           >
                             <div className="flex items-center justify-between">
-                              <span className="text-sm font-semibold text-white tabular-nums">
+                              <span className="text-sm font-semibold text-ink tabular-nums">
                                 {formatTime(_data.start_time)} – {formatTime(_data.end_time)}
                               </span>
-                              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-600 text-gray-400 flex items-center gap-1">
+                              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-surface text-ink-secondary flex items-center gap-1">
                                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                     d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -267,9 +267,9 @@ export default function WeeklyPlan() {
                                 Scheduled
                               </span>
                             </div>
-                            <span className="text-sm text-gray-300">{_data.title}</span>
+                            <span className="text-sm text-ink-secondary">{_data.title}</span>
                             {_data.recurring && (
-                              <span className="text-xs text-gray-500">Recurring weekly</span>
+                              <span className="text-xs text-ink-muted">Recurring weekly</span>
                             )}
                           </div>
                         );
@@ -279,19 +279,19 @@ export default function WeeklyPlan() {
                       const topic = topicMap[block.topic_id];
                       const course = topic ? courseMap[topic.courseId] : null;
                       const resource = block.resource_id ? resourceMap[block.resource_id] : null;
-                      const borderColor = course?.color ?? '#6366f1';
+                      const borderColor = course?.color ?? '#D4A017';
 
                       return (
                         <div
                           key={`block-${block.id}`}
-                          className="bg-gray-800 rounded-xl pl-4 pr-4 py-3 border-l-4 border border-gray-700 flex flex-col gap-1"
+                          className="bg-surface rounded-xl pl-4 pr-4 py-3 border-l-4 border border-border flex flex-col gap-1"
                           style={{ borderLeftColor: borderColor }}
                         >
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-semibold text-white tabular-nums">
+                            <span className="text-sm font-semibold text-ink tabular-nums">
                               {formatTime(block.start_time)} – {formatTime(block.end_time)}
                             </span>
-                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-700 text-gray-300 capitalize">
+                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-border text-ink-secondary capitalize">
                               {block.method}
                             </span>
                           </div>
@@ -303,15 +303,15 @@ export default function WeeklyPlan() {
                                 style={{ backgroundColor: course.color }}
                               />
                             )}
-                            <span className="text-sm text-gray-200">
+                            <span className="text-sm text-ink-secondary">
                               {course?.name ?? `Course ${block.topic_id}`}
-                              <span className="text-gray-500 mx-1">·</span>
+                              <span className="text-ink-muted mx-1">·</span>
                               {topic?.name ?? `Topic ${block.topic_id}`}
                             </span>
                           </div>
 
                           {resource && (
-                            <span className="text-xs text-indigo-400">{resource.name}</span>
+                            <span className="text-xs text-accent">{resource.name}</span>
                           )}
 
                           {block.reason && (() => {
@@ -324,14 +324,14 @@ export default function WeeklyPlan() {
                               <div className="flex flex-col gap-0.5 mt-1">
                                 {whyText && (
                                   <p className="text-xs">
-                                    <span className="font-semibold text-indigo-400">Why: </span>
-                                    <span className="text-gray-500">{whyText}</span>
+                                    <span className="font-semibold text-accent">Why: </span>
+                                    <span className="text-ink-muted">{whyText}</span>
                                   </p>
                                 )}
                                 {howText && (
                                   <p className="text-xs">
-                                    <span className="font-semibold text-indigo-400">How: </span>
-                                    <span className="text-gray-400">{howText}</span>
+                                    <span className="font-semibold text-accent">How: </span>
+                                    <span className="text-ink-secondary">{howText}</span>
                                   </p>
                                 )}
                               </div>

@@ -298,7 +298,7 @@ export default function Dashboard() {
                       <span className="text-sm font-semibold text-ink tabular-nums">
                         {formatTime(block.start_time)} – {formatTime(block.end_time)}
                       </span>
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-surface text-ink-secondary capitalize">
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-border text-ink-secondary capitalize">
                         {block.method}
                       </span>
                     </div>
@@ -556,7 +556,7 @@ export default function Dashboard() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                       <span className="text-sm font-medium text-ink truncate">{a.name}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-surface text-ink-secondary capitalize">{a.type}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-border text-ink-secondary capitalize">{a.type}</span>
                     </div>
                     <span className="text-xs text-ink-muted">{course?.name ?? ''}</span>
                   </div>
