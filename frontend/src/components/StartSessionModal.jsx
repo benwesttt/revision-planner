@@ -95,21 +95,21 @@ export default function StartSessionModal({ onClose }) {
     }
   };
 
-  const inputCls = 'bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 w-full';
+  const inputCls = 'bg-background border border-border rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-accent w-full';
   const labelCls = 'flex flex-col gap-1';
-  const labelTextCls = 'text-xs text-gray-400';
+  const labelTextCls = 'text-xs text-ink-secondary';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-      <div className="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm">
-        <h2 className="text-lg font-semibold text-white mb-4">Start a Session</h2>
+      <div className="bg-surface border border-border rounded-xl p-5 w-full max-w-sm">
+        <h2 className="text-lg font-semibold text-ink mb-4">Start a Session</h2>
 
         {loading ? (
-          <p className="text-sm text-gray-500 mb-4">Loading your courses…</p>
+          <p className="text-sm text-ink-muted mb-4">Loading your courses…</p>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {suggested && (
-              <p className="text-xs text-indigo-400 bg-indigo-900/30 border border-indigo-800 rounded-lg px-3 py-2">
+              <p className="text-xs text-accent bg-accent/10 border border-accent/30 rounded-lg px-3 py-2">
                 Suggested from your current scheduled block — change it if you're doing something else.
               </p>
             )}
@@ -124,14 +124,14 @@ export default function StartSessionModal({ onClose }) {
               >
                 <option value="">Select course…</option>
                 {activeCourses.length > 0 && (
-                  <optgroup label="Active" className="text-gray-200 font-normal">
+                  <optgroup label="Active" className="text-ink-secondary font-normal">
                     {activeCourses.map(c => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
                   </optgroup>
                 )}
                 {inactiveCourses.length > 0 && (
-                  <optgroup label="Inactive" className="text-gray-500 font-normal">
+                  <optgroup label="Inactive" className="text-ink-muted font-normal">
                     {inactiveCourses.map(c => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
@@ -157,7 +157,7 @@ export default function StartSessionModal({ onClose }) {
             </label>
 
             {error && (
-              <p className="text-sm text-red-400 bg-red-900/30 border border-red-800 rounded-lg px-3 py-2">
+              <p className="text-sm text-danger bg-danger-bg border border-danger/40 rounded-lg px-3 py-2">
                 {error}
               </p>
             )}
@@ -166,14 +166,14 @@ export default function StartSessionModal({ onClose }) {
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                className="px-4 py-2 text-sm text-ink-secondary hover:text-ink transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting || !topicId}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+                className="px-4 py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-background text-sm font-medium rounded-lg transition-colors"
               >
                 {submitting ? 'Starting…' : 'Start'}
               </button>
