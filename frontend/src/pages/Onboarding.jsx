@@ -17,6 +17,11 @@ const METHOD_OPTIONS = [
   { label: 'Notes Review',        value: 'review notes' },
 ];
 
+const SUBJECT_TYPES = [
+  { value: 'discrete', label: 'Discrete topics (STEM, law, medicine...)' },
+  { value: 'essay_based', label: 'Essay-based (humanities)' },
+];
+
 const SESSION_LENGTHS = [25, 50, 75];
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const WEEK_OPTIONS = [
@@ -73,6 +78,7 @@ export default function Onboarding() {
   // Step 2
   const [courses, setCourses] = useState([]);
   const [courseInput, setCourseInput] = useState('');
+  const [courseSubjectType, setCourseSubjectType] = useState('discrete');
   const [addingCourse, setAddingCourse] = useState(false);
 
   // Step 3
@@ -112,12 +118,13 @@ export default function Onboarding() {
       const color = COURSE_COLORS[courses.length % COURSE_COLORS.length];
       const res = await fetchWithAuth(`${API_BASE_URL}/courses/`, {
         method: 'POST',
-        body: JSON.stringify({ user_id: USER_ID, name, color }),
+        body: JSON.stringify({ user_id: USER_ID, name, color, subject_type: courseSubjectType }),
       });
       if (!res.ok) throw new Error('Failed to add course');
       const created = await res.json();
       setCourses(prev => [...prev, created]);
       setCourseInput('');
+      setCourseSubjectType('discrete');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -326,22 +333,43 @@ export default function Onboarding() {
               <h2 className="text-lg font-semibold text-ink mb-1">Add your courses</h2>
               <p className="text-sm text-ink-secondary mb-5">Add the courses or modules you're studying this term.</p>
 
-              <form onSubmit={handleAddCourse} className="flex gap-2 mb-4">
-                <input
-                  type="text"
-                  placeholder="e.g. Mathematics, Biology A"
-                  value={courseInput}
-                  onChange={e => setCourseInput(e.target.value)}
-                  className={inputCls}
-                  autoFocus
-                />
-                <button
-                  type="submit"
-                  disabled={addingCourse || !courseInput.trim()}
-                  className="px-4 py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-background text-sm font-medium rounded-lg transition-colors shrink-0"
-                >
-                  {addingCourse ? '…' : 'Add'}
-                </button>
+              <form onSubmit={handleAddCourse} className="flex flex-col gap-3 mb-4">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="e.g. Mathematics, Biology A"
+                    value={courseInput}
+                    onChange={e => setCourseInput(e.target.value)}
+                    className={inputCls}
+                    autoFocus
+                  />
+                  <button
+                    type="submit"
+                    disabled={addingCourse || !courseInput.trim()}
+                    className="px-4 py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-background text-sm font-medium rounded-lg transition-colors shrink-0"
+                  >
+                    {addingCourse ? '…' : 'Add'}
+                  </button>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs text-ink-secondary">Subject type</span>
+                  <div className="flex gap-2">
+                    {SUBJECT_TYPES.map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setCourseSubjectType(opt.value)}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                          courseSubjectType === opt.value
+                            ? 'bg-accent border-accent text-background'
+                            : 'bg-surface border-border text-ink-secondary hover:text-ink'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </form>
 
               {courses.length > 0 ? (

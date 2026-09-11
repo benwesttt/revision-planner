@@ -354,7 +354,11 @@ export default function Dashboard() {
                     ) : null}
                     {loggingBlockId === block.id && (
                       <div className="mt-2 pt-2 border-t border-border flex items-center gap-3 flex-wrap">
-                        <span className="text-xs text-ink-secondary">Confidence</span>
+                        <span className="text-xs text-ink-secondary">
+                          {course?.subject_type === 'essay_based'
+                            ? 'How well could you argue this topic in an essay right now?'
+                            : 'How confident do you feel on this topic?'}
+                        </span>
                         <div className="flex gap-1">
                           {[1, 2, 3, 4, 5].map(n => (
                             <button

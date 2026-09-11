@@ -141,6 +141,11 @@ export default function LogSession() {
   const activeCourses = courses.filter(c => c.is_active);
   const inactiveCourses = courses.filter(c => !c.is_active);
 
+  const selectedCourse = courses.find(c => String(c.id) === String(form.course_id));
+  const confidenceLabel = selectedCourse?.subject_type === 'essay_based'
+    ? 'How well could you argue this topic in an essay right now?'
+    : 'How confident do you feel on this topic?';
+
   const inputCls = 'bg-background border border-border rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-accent w-full';
   const labelCls = 'flex flex-col gap-1';
   const labelTextCls = 'text-xs text-ink-secondary';
@@ -250,7 +255,7 @@ export default function LogSession() {
 
         {/* Confidence */}
         <div className={labelCls}>
-          <span className={labelTextCls}>Confidence</span>
+          <span className={labelTextCls}>{confidenceLabel}</span>
           <div className="flex gap-1.5 mt-0.5">
             {[1, 2, 3, 4, 5].map(n => (
               <button

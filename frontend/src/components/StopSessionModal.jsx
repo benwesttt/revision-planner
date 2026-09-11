@@ -30,7 +30,7 @@ function Stars({ value, onChange }) {
   );
 }
 
-export default function StopSessionModal({ topicName, onClose }) {
+export default function StopSessionModal({ topicName, subjectType, onClose }) {
   const { session, elapsedSeconds, stop } = useTimer();
 
   // Snapshotted once, when this screen mounts — the session keeps running
@@ -45,6 +45,9 @@ export default function StopSessionModal({ topicName, onClose }) {
   const [error, setError] = useState(null);
 
   const isLong = Number(durationMinutes) > LONG_SESSION_MINUTES;
+  const confidenceLabel = subjectType === 'essay_based'
+    ? 'How well could you argue this topic in an essay right now?'
+    : 'How confident do you feel on this topic?';
 
   const handleSubmit = async e => {
     e.preventDefault();
@@ -104,7 +107,7 @@ export default function StopSessionModal({ topicName, onClose }) {
           </label>
 
           <div className={labelCls}>
-            <span className={labelTextCls}>Confidence</span>
+            <span className={labelTextCls}>{confidenceLabel}</span>
             <div className="mt-0.5 flex items-center gap-2">
               <Stars value={confidence} onChange={setConfidence} />
               <span className="text-sm text-ink-secondary">{confidence} / 5</span>

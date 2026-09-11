@@ -17,18 +17,26 @@ export default function TimerWidget() {
   const fetchWithAuth = useApi();
   const { session, loading, elapsedSeconds, pause, resume } = useTimer();
   const [topicName, setTopicName] = useState('');
+  const [subjectType, setSubjectType] = useState(null);
   const [showStart, setShowStart] = useState(false);
   const [showStop, setShowStop] = useState(false);
   const [toggling, setToggling] = useState(false);
 
-  // Resolve the topic's name for display — the session only carries topic_id.
+  // Resolve the topic's name and its course's subject_type for display —
+  // the session only carries topic_id.
   useEffect(() => {
     if (!session?.topic_id) return;
     let cancelled = false;
     fetchWithAuth(`${API_BASE_URL}/topics/${session.topic_id}`)
       .then(r => (r.ok ? r.json() : null))
       .then(t => {
-        if (!cancelled && t) setTopicName(t.name);
+        if (cancelled || !t) return;
+        setTopicName(t.name);
+        return fetchWithAuth(`${API_BASE_URL}/courses/${t.course_id}`)
+          .then(r => (r.ok ? r.json() : null))
+          .then(c => {
+            if (!cancelled && c) setSubjectType(c.subject_type);
+          });
       });
     return () => {
       cancelled = true;
@@ -99,7 +107,13 @@ export default function TimerWidget() {
           </svg>
         </button>
       </div>
-      {showStop && <StopSessionModal topicName={topicName} onClose={() => setShowStop(false)} />}
+      {showStop && (
+        <StopSessionModal
+          topicName={topicName}
+          subjectType={subjectType}
+          onClose={() => setShowStop(false)}
+        />
+      )}
     </>
   );
 }

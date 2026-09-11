@@ -4,6 +4,11 @@ import { useApi } from '../lib/api';
 
 const USER_ID = 1;
 
+const SUBJECT_TYPES = [
+  { value: 'discrete', label: 'Discrete topics (STEM, law, medicine...)' },
+  { value: 'essay_based', label: 'Essay-based (humanities)' },
+];
+
 export default function Courses() {
   const fetchWithAuth = useApi();
   const [courses, setCourses] = useState([]);
@@ -12,7 +17,7 @@ export default function Courses() {
   const [error, setError] = useState(null);
 
   const [showAddCourse, setShowAddCourse] = useState(false);
-  const [courseForm, setCourseForm] = useState({ name: '', color: '#D4A017' });
+  const [courseForm, setCourseForm] = useState({ name: '', color: '#D4A017', subject_type: 'discrete' });
   const [courseSubmitting, setCourseSubmitting] = useState(false);
 
   const [expandedTopic, setExpandedTopic] = useState(null);
@@ -22,6 +27,7 @@ export default function Courses() {
   const [editingCourseId, setEditingCourseId] = useState(null);
   const [editCourseName, setEditCourseName] = useState('');
   const [editCourseMode, setEditCourseMode] = useState('revision');
+  const [editCourseSubjectType, setEditCourseSubjectType] = useState('discrete');
   const [courseEditSaving, setCourseEditSaving] = useState(false);
 
   const [pendingDeleteCourse, setPendingDeleteCourse] = useState(null);
@@ -72,10 +78,15 @@ export default function Courses() {
     try {
       const res = await fetchWithAuth(`${API_BASE_URL}/courses/`, {
         method: 'POST',
-        body: JSON.stringify({ user_id: USER_ID, name: courseForm.name.trim(), color: courseForm.color }),
+        body: JSON.stringify({
+          user_id: USER_ID,
+          name: courseForm.name.trim(),
+          color: courseForm.color,
+          subject_type: courseForm.subject_type,
+        }),
       });
       if (!res.ok) throw new Error('Failed to create course');
-      setCourseForm({ name: '', color: '#D4A017' });
+      setCourseForm({ name: '', color: '#D4A017', subject_type: 'discrete' });
       setShowAddCourse(false);
       await fetchCourses();
     } catch (err) {
@@ -114,6 +125,7 @@ export default function Courses() {
     setEditingCourseId(course.id);
     setEditCourseName(course.name);
     setEditCourseMode(course.mode ?? 'revision');
+    setEditCourseSubjectType(course.subject_type ?? 'discrete');
   };
 
   const cancelEditCourse = () => setEditingCourseId(null);
@@ -125,7 +137,11 @@ export default function Courses() {
     try {
       const res = await fetchWithAuth(`${API_BASE_URL}/courses/${courseId}`, {
         method: 'PUT',
-        body: JSON.stringify({ name: editCourseName.trim(), mode: editCourseMode }),
+        body: JSON.stringify({
+          name: editCourseName.trim(),
+          mode: editCourseMode,
+          subject_type: editCourseSubjectType,
+        }),
       });
       if (!res.ok) throw new Error('Failed to update course');
       setEditingCourseId(null);
@@ -281,6 +297,25 @@ export default function Courses() {
               />
             </label>
           </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-ink-secondary">Subject type</span>
+            <div className="flex gap-2">
+              {SUBJECT_TYPES.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setCourseForm(f => ({ ...f, subject_type: opt.value }))}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                    courseForm.subject_type === opt.value
+                      ? 'bg-accent border-accent text-background'
+                      : 'bg-background border-border text-ink-secondary hover:text-ink'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="flex justify-end">
             <button
               type="submit"
@@ -310,38 +345,56 @@ export default function Courses() {
               >
                 {/* Course header */}
                 {editingCourseId === course.id ? (
-                  <form onSubmit={e => handleSaveCourse(e, course.id)} className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: course.color }} />
-                    <input
-                      type="text"
-                      value={editCourseName}
-                      onChange={e => setEditCourseName(e.target.value)}
-                      className="flex-1 bg-background border border-border rounded-lg px-2 py-1 text-sm text-ink focus:outline-none focus:border-accent"
-                      autoFocus
-                      required
-                    />
-                    <select
-                      value={editCourseMode}
-                      onChange={e => setEditCourseMode(e.target.value)}
-                      className="bg-background border border-border rounded-lg px-2 py-1 text-xs text-ink focus:outline-none focus:border-accent"
-                    >
-                      <option value="revision">Revision</option>
-                      <option value="learning">Learning</option>
-                    </select>
-                    <button
-                      type="submit"
-                      disabled={courseEditSaving}
-                      className="px-2 py-1 bg-accent hover:bg-accent-hover disabled:opacity-50 text-background text-xs font-medium rounded-lg transition-colors"
-                    >
-                      {courseEditSaving ? '…' : 'Save'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={cancelEditCourse}
-                      className="px-2 py-1 text-xs text-ink-secondary hover:text-ink transition-colors"
-                    >
-                      Cancel
-                    </button>
+                  <form onSubmit={e => handleSaveCourse(e, course.id)} className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: course.color }} />
+                      <input
+                        type="text"
+                        value={editCourseName}
+                        onChange={e => setEditCourseName(e.target.value)}
+                        className="flex-1 bg-background border border-border rounded-lg px-2 py-1 text-sm text-ink focus:outline-none focus:border-accent"
+                        autoFocus
+                        required
+                      />
+                      <select
+                        value={editCourseMode}
+                        onChange={e => setEditCourseMode(e.target.value)}
+                        className="bg-background border border-border rounded-lg px-2 py-1 text-xs text-ink focus:outline-none focus:border-accent"
+                      >
+                        <option value="revision">Revision</option>
+                        <option value="learning">Learning</option>
+                      </select>
+                      <button
+                        type="submit"
+                        disabled={courseEditSaving}
+                        className="px-2 py-1 bg-accent hover:bg-accent-hover disabled:opacity-50 text-background text-xs font-medium rounded-lg transition-colors"
+                      >
+                        {courseEditSaving ? '…' : 'Save'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelEditCourse}
+                        className="px-2 py-1 text-xs text-ink-secondary hover:text-ink transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    <div className="flex gap-2 pl-5">
+                      {SUBJECT_TYPES.map(opt => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setEditCourseSubjectType(opt.value)}
+                          className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                            editCourseSubjectType === opt.value
+                              ? 'bg-accent border-accent text-background'
+                              : 'bg-background border-border text-ink-secondary hover:text-ink'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
                   </form>
                 ) : (
                   <div className="flex items-center gap-2">
