@@ -11,6 +11,7 @@ class CourseBase(BaseModel):
     name: str
     color: str
     is_active: bool = True
+    subject_type: Literal["discrete", "essay_based"] = "discrete"
 
 
 class CourseCreate(CourseBase):
@@ -22,6 +23,7 @@ class CourseUpdate(BaseModel):
     color: Optional[str] = None
     is_active: Optional[bool] = None
     mode: Literal["learning", "revision"] = "revision"
+    subject_type: Optional[Literal["discrete", "essay_based"]] = None
 
 
 class CourseResponse(CourseBase):
