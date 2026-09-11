@@ -14,7 +14,7 @@ const TYPES = [
   'Other',
 ];
 
-const inputCls = 'bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 w-full';
+const inputCls = 'bg-background border border-border rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-muted focus:outline-none focus:border-accent w-full';
 
 async function fetchTopicsForCourse(courseId, fetchWithAuth) {
   const res = await fetchWithAuth(`${API_BASE_URL}/topics/?course_id=${courseId}`);
@@ -27,11 +27,11 @@ async function fetchLinksForResource(resourceId, fetchWithAuth) {
 }
 
 function TopicChecklist({ topics, selected, onChange }) {
-  if (topics.length === 0) return <p className="text-xs text-gray-600">No topics for this course yet.</p>;
+  if (topics.length === 0) return <p className="text-xs text-ink-muted">No topics for this course yet.</p>;
   return (
     <div className="flex flex-col gap-1 max-h-36 overflow-y-auto">
       {topics.map(t => (
-        <label key={t.id} className="flex items-center gap-2 cursor-pointer text-sm text-gray-300 hover:text-white">
+        <label key={t.id} className="flex items-center gap-2 cursor-pointer text-sm text-ink-secondary hover:text-ink">
           <input
             type="checkbox"
             checked={selected.includes(t.id)}
@@ -42,7 +42,7 @@ function TopicChecklist({ topics, selected, onChange }) {
                   : [...selected, t.id]
               );
             }}
-            className="w-4 h-4 rounded accent-indigo-500"
+            className="w-4 h-4 rounded accent-accent"
           />
           {t.name}
         </label>
@@ -268,23 +268,23 @@ export default function Resources() {
     ? resources.filter(r => r.course_id === filterCourse)
     : resources;
 
-  if (loading) return <p className="text-gray-400">Loading resources…</p>;
+  if (loading) return <p className="text-ink-secondary">Loading resources…</p>;
 
   return (
     <div className="max-w-3xl">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-white">Resources</h1>
+        <h1 className="text-2xl font-semibold text-ink">Resources</h1>
         <button
           onClick={() => setShowForm(v => !v)}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors"
+          className="px-4 py-2 bg-accent hover:bg-accent-hover text-background text-sm font-medium rounded-lg transition-colors"
         >
           {showForm ? 'Cancel' : '+ Add Resource'}
         </button>
       </div>
 
       {error && (
-        <p className="mb-4 text-sm text-red-400 bg-red-900/30 border border-red-800 rounded-lg px-4 py-2">
+        <p className="mb-4 text-sm text-danger bg-danger-bg border border-danger/40 rounded-lg px-4 py-2">
           {error}
         </p>
       )}
@@ -296,8 +296,8 @@ export default function Resources() {
             onClick={() => setFilterCourse(null)}
             className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
               filterCourse === null
-                ? 'bg-indigo-600 border-indigo-500 text-white'
-                : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200'
+                ? 'bg-accent border-accent text-background'
+                : 'bg-surface border-border text-ink-secondary hover:text-ink'
             }`}
           >
             All Courses
@@ -308,8 +308,8 @@ export default function Resources() {
               onClick={() => setFilterCourse(filterCourse === c.id ? null : c.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
                 filterCourse === c.id
-                  ? 'bg-indigo-600 border-indigo-500 text-white'
-                  : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200'
+                  ? 'bg-accent border-accent text-background'
+                  : 'bg-surface border-border text-ink-secondary hover:text-ink'
               }`}
             >
               <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: c.color }} />
@@ -318,7 +318,7 @@ export default function Resources() {
           ))}
           {inactiveCourses.length > 0 && (
             <>
-              <span className="basis-full text-[10px] font-semibold uppercase tracking-wide text-gray-600 mt-1">
+              <span className="basis-full text-[10px] font-semibold uppercase tracking-wide text-ink-muted mt-1">
                 Inactive
               </span>
               {inactiveCourses.map(c => (
@@ -327,8 +327,8 @@ export default function Resources() {
                   onClick={() => setFilterCourse(filterCourse === c.id ? null : c.id)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors opacity-60 ${
                     filterCourse === c.id
-                      ? 'bg-indigo-600 border-indigo-500 text-white'
-                      : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200'
+                      ? 'bg-accent border-accent text-background'
+                      : 'bg-surface border-border text-ink-secondary hover:text-ink'
                   }`}
                 >
                   <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: c.color }} />
@@ -344,12 +344,12 @@ export default function Resources() {
       {showForm && (
         <form
           onSubmit={handleSubmit}
-          className="mb-6 p-4 bg-gray-800 border border-gray-700 rounded-xl flex flex-col gap-3"
+          className="mb-6 p-4 bg-surface border border-border rounded-xl flex flex-col gap-3"
         >
-          <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">New Resource</h2>
+          <h2 className="text-sm font-semibold text-ink-secondary uppercase tracking-wide">New Resource</h2>
 
           <label className="flex flex-col gap-1">
-            <span className="text-xs text-gray-400">Name</span>
+            <span className="text-xs text-ink-secondary">Name</span>
             <input
               type="text"
               placeholder="e.g. Week 3 Lecture Notes"
@@ -363,7 +363,7 @@ export default function Resources() {
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1">
-              <span className="text-xs text-gray-400">Type</span>
+              <span className="text-xs text-ink-secondary">Type</span>
               <select
                 value={form.type}
                 onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
@@ -374,7 +374,7 @@ export default function Resources() {
             </label>
 
             <label className="flex flex-col gap-1">
-              <span className="text-xs text-gray-400">Course</span>
+              <span className="text-xs text-ink-secondary">Course</span>
               <select
                 value={form.course_id}
                 onChange={e => setForm(f => ({ ...f, course_id: e.target.value }))}
@@ -383,14 +383,14 @@ export default function Resources() {
               >
                 <option value="">Select course…</option>
                 {activeCourses.length > 0 && (
-                  <optgroup label="Active" className="text-gray-200 font-normal">
+                  <optgroup label="Active" className="text-ink-secondary font-normal">
                     {activeCourses.map(c => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
                   </optgroup>
                 )}
                 {inactiveCourses.length > 0 && (
-                  <optgroup label="Inactive" className="text-gray-500 font-normal">
+                  <optgroup label="Inactive" className="text-ink-muted font-normal">
                     {inactiveCourses.map(c => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
@@ -402,8 +402,8 @@ export default function Resources() {
 
           {form.course_id && (
             <div className="flex flex-col gap-1">
-              <span className="text-xs text-gray-400">Topics</span>
-              <div className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2">
+              <span className="text-xs text-ink-secondary">Topics</span>
+              <div className="bg-background border border-border rounded-lg px-3 py-2">
                 <TopicChecklist
                   topics={formTopicList}
                   selected={formTopicSel}
@@ -417,7 +417,7 @@ export default function Resources() {
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+              className="px-4 py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-background text-sm font-medium rounded-lg transition-colors"
             >
               {submitting ? 'Saving…' : 'Save Resource'}
             </button>
@@ -428,15 +428,15 @@ export default function Resources() {
       {/* Empty state */}
       {displayed.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center mb-4">
-            <svg className="w-7 h-7 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-14 h-14 rounded-full bg-surface flex items-center justify-center mb-4">
+            <svg className="w-7 h-7 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
           </div>
-          <p className="text-gray-400 text-sm font-medium">No resources yet</p>
-          <p className="text-gray-600 text-sm mt-1">
-            Click <span className="text-indigo-400">+ Add Resource</span> to get started
+          <p className="text-ink-secondary text-sm font-medium">No resources yet</p>
+          <p className="text-ink-muted text-sm mt-1">
+            Click <span className="text-accent">+ Add Resource</span> to get started
           </p>
         </div>
       )}
@@ -454,12 +454,12 @@ export default function Resources() {
             return (
               <div
                 key={r.id}
-                className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3"
+                className="bg-surface border border-border rounded-xl px-4 py-3"
               >
                 {isEditing ? (
                   <form onSubmit={e => handleSave(e, r)} className="flex flex-col gap-3">
                     <label className="flex flex-col gap-1">
-                      <span className="text-xs text-gray-400">Name</span>
+                      <span className="text-xs text-ink-secondary">Name</span>
                       <input
                         type="text"
                         value={editForm.name}
@@ -472,7 +472,7 @@ export default function Resources() {
 
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <label className="flex flex-col gap-1">
-                        <span className="text-xs text-gray-400">Type</span>
+                        <span className="text-xs text-ink-secondary">Type</span>
                         <select
                           value={editForm.type}
                           onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))}
@@ -483,7 +483,7 @@ export default function Resources() {
                       </label>
 
                       <label className="flex flex-col gap-1">
-                        <span className="text-xs text-gray-400">Course</span>
+                        <span className="text-xs text-ink-secondary">Course</span>
                         <select
                           value={editForm.course_id}
                           onChange={e => {
@@ -493,14 +493,14 @@ export default function Resources() {
                           className={inputCls}
                         >
                           {activeCourses.length > 0 && (
-                            <optgroup label="Active" className="text-gray-200 font-normal">
+                            <optgroup label="Active" className="text-ink-secondary font-normal">
                               {activeCourses.map(c => (
                                 <option key={c.id} value={c.id}>{c.name}</option>
                               ))}
                             </optgroup>
                           )}
                           {inactiveCourses.length > 0 && (
-                            <optgroup label="Inactive" className="text-gray-500 font-normal">
+                            <optgroup label="Inactive" className="text-ink-muted font-normal">
                               {inactiveCourses.map(c => (
                                 <option key={c.id} value={c.id}>{c.name}</option>
                               ))}
@@ -512,8 +512,8 @@ export default function Resources() {
 
                     {editForm.course_id && (
                       <div className="flex flex-col gap-1">
-                        <span className="text-xs text-gray-400">Topics</span>
-                        <div className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2">
+                        <span className="text-xs text-ink-secondary">Topics</span>
+                        <div className="bg-background border border-border rounded-lg px-3 py-2">
                           <TopicChecklist
                             topics={editTopicList}
                             selected={editTopicSel}
@@ -523,18 +523,18 @@ export default function Resources() {
                       </div>
                     )}
 
-                    <div className="flex justify-end gap-2 pt-1 border-t border-gray-700">
+                    <div className="flex justify-end gap-2 pt-1 border-t border-border">
                       <button
                         type="button"
                         onClick={cancelEdit}
-                        className="px-3 py-1.5 text-xs text-gray-400 hover:text-gray-200 transition-colors"
+                        className="px-3 py-1.5 text-xs text-ink-secondary hover:text-ink transition-colors"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
                         disabled={saving}
-                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+                        className="px-3 py-1.5 bg-accent hover:bg-accent-hover disabled:opacity-50 text-background text-xs font-medium rounded-lg transition-colors"
                       >
                         {saving ? 'Saving…' : 'Save'}
                       </button>
@@ -544,12 +544,12 @@ export default function Resources() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-sm font-semibold text-white">{r.name}</span>
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-700 text-gray-300">
+                        <span className="text-sm font-semibold text-ink">{r.name}</span>
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-border text-ink-secondary">
                           {r.type}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-500 flex-wrap">
+                      <div className="flex items-center gap-2 text-xs text-ink-muted flex-wrap">
                         {course && (
                           <span className="flex items-center gap-1">
                             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: course.color }} />
@@ -558,7 +558,7 @@ export default function Resources() {
                         )}
                         {linkedTopics.length > 0 && (
                           <>
-                            <span className="text-gray-700">·</span>
+                            <span className="text-ink-muted">·</span>
                             <span>{linkedTopics.join(', ')}</span>
                           </>
                         )}
@@ -568,17 +568,17 @@ export default function Resources() {
                     <div className="flex items-center gap-2 shrink-0">
                       {isPending ? (
                         <>
-                          <span className="text-xs text-gray-400">Delete?</span>
+                          <span className="text-xs text-ink-secondary">Delete?</span>
                           <button
                             onClick={() => handleDelete(r.id)}
                             disabled={deleting === r.id}
-                            className="text-xs px-2 py-1 bg-red-700 hover:bg-red-600 disabled:opacity-50 text-white rounded-lg transition-colors"
+                            className="text-xs px-2 py-1 bg-danger hover:bg-danger/90 disabled:opacity-50 text-ink rounded-lg transition-colors"
                           >
                             {deleting === r.id ? '…' : 'Yes'}
                           </button>
                           <button
                             onClick={() => setPendingDelete(null)}
-                            className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+                            className="text-xs px-2 py-1 bg-border hover:bg-white/5 text-ink-secondary rounded-lg transition-colors"
                           >
                             No
                           </button>
@@ -587,7 +587,7 @@ export default function Resources() {
                         <>
                           <button
                             onClick={() => startEdit(r)}
-                            className="text-gray-600 hover:text-indigo-400 transition-colors"
+                            className="text-ink-muted hover:text-accent transition-colors"
                             aria-label="Edit resource"
                           >
                             <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
@@ -596,7 +596,7 @@ export default function Resources() {
                           </button>
                           <button
                             onClick={() => setPendingDelete(r.id)}
-                            className="text-gray-600 hover:text-red-400 transition-colors"
+                            className="text-ink-muted hover:text-danger transition-colors"
                             aria-label="Delete resource"
                           >
                             <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
