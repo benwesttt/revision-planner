@@ -42,7 +42,7 @@ export default function TimerWidget() {
       <>
         <button
           onClick={() => setShowStart(true)}
-          className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors"
+          className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-accent hover:bg-accent-hover text-background text-sm font-medium rounded-lg transition-colors"
         >
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
@@ -67,17 +67,17 @@ export default function TimerWidget() {
 
   return (
     <>
-      <div className="ml-auto flex items-center gap-3 bg-gray-800 border border-gray-700 rounded-lg pl-3 pr-1.5 py-1.5">
+      <div className="ml-auto flex items-center gap-3 bg-surface border border-border rounded-lg pl-3 pr-1.5 py-1.5">
         <div className="flex items-center gap-2 min-w-0">
-          <span className={`w-2 h-2 rounded-full shrink-0 ${isPaused ? 'bg-yellow-400' : 'bg-green-400 animate-pulse'}`} />
-          <span className="text-sm font-mono text-white tabular-nums">{formatElapsed(elapsedSeconds)}</span>
-          <span className="text-sm text-gray-400 truncate max-w-[10rem] hidden sm:inline">{topicName}</span>
+          <span className={`w-2 h-2 rounded-full shrink-0 ${isPaused ? 'bg-warning' : 'bg-success animate-pulse'}`} />
+          <span className="text-sm font-mono text-ink tabular-nums">{formatElapsed(elapsedSeconds)}</span>
+          <span className="text-sm text-ink-secondary truncate max-w-[10rem] hidden sm:inline">{topicName}</span>
         </div>
         <button
           onClick={handleToggle}
           disabled={toggling}
           aria-label={isPaused ? 'Resume session' : 'Pause session'}
-          className="flex items-center justify-center w-8 h-8 rounded-md text-gray-300 hover:text-white hover:bg-gray-700 disabled:opacity-50 transition-colors"
+          className="flex items-center justify-center w-8 h-8 rounded-md text-ink-secondary hover:text-ink hover:bg-white/5 disabled:opacity-50 transition-colors"
         >
           {isPaused ? (
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -92,7 +92,7 @@ export default function TimerWidget() {
         <button
           onClick={() => setShowStop(true)}
           aria-label="Stop session"
-          className="flex items-center justify-center w-8 h-8 rounded-md text-gray-300 hover:text-white hover:bg-red-900/50 transition-colors"
+          className="flex items-center justify-center w-8 h-8 rounded-md text-ink-secondary hover:text-ink hover:bg-danger-bg transition-colors"
         >
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H8a1 1 0 01-1-1V8z" clipRule="evenodd" />
