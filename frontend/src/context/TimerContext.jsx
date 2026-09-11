@@ -46,10 +46,14 @@ export function TimerProvider({ children }) {
     return Math.max(Math.floor((end - started) / 1000) - pausedTotal, 0);
   }, [session, now]);
 
-  const start = async ({ topicId, method }) => {
+  const start = async ({ topicId, method, planBlockId }) => {
     const res = await fetchWithAuth(`${API_BASE_URL}/revision-sessions/start`, {
       method: 'POST',
-      body: JSON.stringify({ topic_id: topicId, method: method || undefined }),
+      body: JSON.stringify({
+        topic_id: topicId,
+        method: method || undefined,
+        plan_block_id: planBlockId || undefined,
+      }),
     });
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));

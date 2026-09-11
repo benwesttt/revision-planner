@@ -325,7 +325,12 @@ export default function LogSession() {
                   </div>
                   <div className="flex items-center gap-3 text-xs text-ink-muted">
                     <span className="capitalize">{s.method}</span>
-                    <span>{s.duration_minutes} min</span>
+                    <span>
+                      {s.duration_minutes} min
+                      {s.planned_duration_minutes != null && (
+                        <span className="text-ink-muted"> · planned {s.planned_duration_minutes} min</span>
+                      )}
+                    </span>
                     <span>{formatDate(s.created_at)}</span>
                   </div>
                 </div>

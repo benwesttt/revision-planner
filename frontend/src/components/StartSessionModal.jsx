@@ -22,6 +22,7 @@ export default function StartSessionModal({ onClose }) {
   const [courseId, setCourseId] = useState('');
   const [topicId, setTopicId] = useState('');
   const [suggested, setSuggested] = useState(false);
+  const [suggestedBlockId, setSuggestedBlockId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -59,6 +60,7 @@ export default function StartSessionModal({ onClose }) {
             setCourseId(String(topic.course_id));
             setTopicId(String(topic.id));
             setSuggested(true);
+            setSuggestedBlockId(current.id);
           }
         }
       }
@@ -77,6 +79,7 @@ export default function StartSessionModal({ onClose }) {
   const handleCourseChange = value => {
     setCourseId(value);
     setSuggested(false);
+    setSuggestedBlockId(null);
     const firstTopic = topics.find(t => String(t.course_id) === String(value));
     setTopicId(firstTopic ? String(firstTopic.id) : '');
   };
@@ -87,7 +90,7 @@ export default function StartSessionModal({ onClose }) {
     setSubmitting(true);
     setError(null);
     try {
-      await start({ topicId: Number(topicId) });
+      await start({ topicId: Number(topicId), planBlockId: suggested ? suggestedBlockId : null });
       onClose();
     } catch (err) {
       setError(err.message);
@@ -144,7 +147,7 @@ export default function StartSessionModal({ onClose }) {
               <span className={labelTextCls}>Topic</span>
               <select
                 value={topicId}
-                onChange={e => { setTopicId(e.target.value); setSuggested(false); }}
+                onChange={e => { setTopicId(e.target.value); setSuggested(false); setSuggestedBlockId(null); }}
                 className={inputCls}
                 required
                 disabled={!courseId}
