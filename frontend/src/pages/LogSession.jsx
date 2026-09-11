@@ -26,7 +26,7 @@ function Stars({ value }) {
       {[1, 2, 3, 4, 5].map(n => (
         <svg
           key={n}
-          className={`w-3.5 h-3.5 ${n <= value ? 'text-yellow-400' : 'text-gray-700'}`}
+          className={`w-3.5 h-3.5 ${n <= value ? 'text-accent' : 'text-ink-muted'}`}
           viewBox="0 0 20 20" fill="currentColor"
         >
           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -141,28 +141,28 @@ export default function LogSession() {
   const activeCourses = courses.filter(c => c.is_active);
   const inactiveCourses = courses.filter(c => !c.is_active);
 
-  const inputCls = 'bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 w-full';
+  const inputCls = 'bg-background border border-border rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-accent w-full';
   const labelCls = 'flex flex-col gap-1';
-  const labelTextCls = 'text-xs text-gray-400';
+  const labelTextCls = 'text-xs text-ink-secondary';
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-2xl font-semibold text-white mb-4">Log Session</h1>
+      <h1 className="text-2xl font-semibold text-ink mb-4">Log Session</h1>
 
-      <div className="flex items-center gap-3 mb-6 px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-sm text-gray-400">
-        <svg className="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="flex items-center gap-3 mb-6 px-4 py-3 bg-surface border border-border rounded-xl text-sm text-ink-secondary">
+        <svg className="w-4 h-4 text-accent shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
             d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <span>Want to quickly log today's scheduled sessions?</span>
-        <Link to="/" className="ml-auto text-indigo-400 hover:text-indigo-300 font-medium transition-colors whitespace-nowrap">
+        <Link to="/" className="ml-auto text-accent hover:text-accent-hover font-medium transition-colors whitespace-nowrap">
           Go to Dashboard →
         </Link>
       </div>
 
       <form
         onSubmit={handleSubmit}
-        className="bg-gray-800 border border-gray-700 rounded-xl p-5 flex flex-col gap-4 mb-8"
+        className="bg-surface border border-border rounded-xl p-5 flex flex-col gap-4 mb-8"
       >
         {/* Course + Topic row */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -176,14 +176,14 @@ export default function LogSession() {
             >
               <option value="">Select course…</option>
               {activeCourses.length > 0 && (
-                <optgroup label="Active" className="text-gray-200 font-normal">
+                <optgroup label="Active" className="text-ink-secondary font-normal">
                   {activeCourses.map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </optgroup>
               )}
               {inactiveCourses.length > 0 && (
-                <optgroup label="Inactive" className="text-gray-500 font-normal">
+                <optgroup label="Inactive" className="text-ink-muted font-normal">
                   {inactiveCourses.map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
@@ -261,24 +261,24 @@ export default function LogSession() {
                 aria-label={`Confidence ${n}`}
               >
                 <svg
-                  className={`w-7 h-7 transition-colors ${n <= form.confidence ? 'text-yellow-400' : 'text-gray-700 hover:text-gray-500'}`}
+                  className={`w-7 h-7 transition-colors ${n <= form.confidence ? 'text-accent' : 'text-ink-muted hover:text-ink-secondary'}`}
                   viewBox="0 0 20 20" fill="currentColor"
                 >
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
               </button>
             ))}
-            <span className="ml-1 text-sm text-gray-400 self-center">{form.confidence} / 5</span>
+            <span className="ml-1 text-sm text-ink-secondary self-center">{form.confidence} / 5</span>
           </div>
         </div>
 
         {error && (
-          <p className="text-sm text-red-400 bg-red-900/30 border border-red-800 rounded-lg px-3 py-2">
+          <p className="text-sm text-danger bg-danger-bg border border-danger/40 rounded-lg px-3 py-2">
             {error}
           </p>
         )}
         {success && (
-          <p className="text-sm text-green-400 bg-green-900/30 border border-green-800 rounded-lg px-3 py-2">
+          <p className="text-sm text-success bg-success-bg border border-success/40 rounded-lg px-3 py-2">
             Session logged!
           </p>
         )}
@@ -287,7 +287,7 @@ export default function LogSession() {
           <button
             type="submit"
             disabled={submitting}
-            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+            className="px-5 py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-background text-sm font-medium rounded-lg transition-colors"
           >
             {submitting ? 'Saving…' : 'Log Session'}
           </button>
@@ -295,12 +295,12 @@ export default function LogSession() {
       </form>
 
       {/* Recent sessions */}
-      <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-3">
+      <h2 className="text-sm font-semibold text-ink-secondary uppercase tracking-widest mb-3">
         Recent Sessions
       </h2>
 
       {sessions.length === 0 ? (
-        <p className="text-sm text-gray-600">No sessions logged yet.</p>
+        <p className="text-sm text-ink-muted">No sessions logged yet.</p>
       ) : (
         <div className="flex flex-col gap-2">
           {sessions.map(s => {
@@ -309,21 +309,21 @@ export default function LogSession() {
             return (
               <div
                 key={s.id}
-                className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 flex items-center gap-4"
+                className="bg-surface border border-border rounded-xl px-4 py-3 flex items-center gap-4"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className="text-sm font-medium text-white truncate">
+                    <span className="text-sm font-medium text-ink truncate">
                       {topic?.name ?? `Topic ${s.topic_id}`}
                     </span>
                     {courseName && (
                       <>
-                        <span className="text-gray-600">·</span>
-                        <span className="text-sm text-gray-400 truncate">{courseName}</span>
+                        <span className="text-ink-muted">·</span>
+                        <span className="text-sm text-ink-secondary truncate">{courseName}</span>
                       </>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                  <div className="flex items-center gap-3 text-xs text-ink-muted">
                     <span className="capitalize">{s.method}</span>
                     <span>{s.duration_minutes} min</span>
                     <span>{formatDate(s.created_at)}</span>
