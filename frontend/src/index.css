@@ -1,1 +1,26 @@
 @import "tailwindcss";
+
+@theme {
+  --color-background: #1F3427;
+  --color-surface: #2A4232;
+  --color-border: #3A5744;
+  --color-accent: #D4A017;
+  --color-accent-hover: #DFAF3D;
+  --color-ink: #F5F3EC;
+  --color-ink-secondary: rgba(245, 243, 236, 0.65);
+  --color-ink-muted: rgba(245, 243, 236, 0.4);
+  --color-danger: #E0575A;
+  --color-danger-bg: rgba(224, 87, 90, 0.14);
+  --color-success: #4FBE85;
+  --color-success-bg: rgba(79, 190, 133, 0.14);
+  --color-warning: #E8933A;
+  --color-warning-bg: rgba(232, 147, 58, 0.14);
+  --font-headline: "Fraunces", serif;
+  --font-body: "Plus Jakarta Sans", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-ink font-body;
+  }
+}

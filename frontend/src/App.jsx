@@ -25,7 +25,7 @@ function AuthGuard({ children }) {
     }
   }, [isLoaded, isSignedIn, navigate]);
 
-  if (!isLoaded) return <div className="min-h-screen bg-gray-950" />;
+  if (!isLoaded) return <div className="min-h-screen bg-background" />;
   if (!isSignedIn) return null;
 
   return children;
