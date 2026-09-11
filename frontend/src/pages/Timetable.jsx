@@ -25,8 +25,8 @@ function toDatetimeLocalValue(isoStr) {
 function WeekToggle({ value, onChange, label }) {
   return (
     <div className="flex items-center gap-2">
-      {label && <span className="text-xs text-gray-500">{label}</span>}
-      <div className="flex rounded-lg overflow-hidden border border-gray-700">
+      {label && <span className="text-xs text-ink-muted">{label}</span>}
+      <div className="flex rounded-lg overflow-hidden border border-border">
         {['A', 'B'].map(w => (
           <button
             key={w}
@@ -34,8 +34,8 @@ function WeekToggle({ value, onChange, label }) {
             onClick={() => onChange(w)}
             className={`px-3 py-1.5 text-xs font-medium transition-colors ${
               value === w
-                ? 'bg-indigo-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:text-gray-200'
+                ? 'bg-accent text-background'
+                : 'bg-surface text-ink-secondary hover:text-ink'
             }`}
           >
             Week {w}
@@ -202,35 +202,35 @@ export default function Timetable() {
     byDay[day].sort((a, b) => a.start_time.localeCompare(b.start_time));
   }
 
-  const inputCls = 'bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500';
+  const inputCls = 'bg-background border border-border rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-muted focus:outline-none focus:border-accent';
 
   if (loading) {
-    return <p className="text-gray-400">Loading timetable…</p>;
+    return <p className="text-ink-secondary">Loading timetable…</p>;
   }
 
   return (
     <div className="max-w-3xl">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-semibold text-white">Timetable</h1>
+        <h1 className="text-2xl font-semibold text-ink">Timetable</h1>
         <button
           onClick={() => setShowForm(v => !v)}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors"
+          className="px-4 py-2 bg-accent hover:bg-accent-hover text-background text-sm font-medium rounded-lg transition-colors"
         >
           {showForm ? 'Cancel' : '+ Add Event'}
         </button>
       </div>
 
       {/* Week controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 p-3 bg-gray-800 border border-gray-700 rounded-xl">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 p-3 bg-surface border border-border rounded-xl">
         <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-400 font-medium">Viewing</span>
+          <span className="text-xs text-ink-secondary font-medium">Viewing</span>
           <WeekToggle value={viewWeek} onChange={setViewWeek} />
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-400 font-medium">
+          <span className="text-xs text-ink-secondary font-medium">
             Planner uses
-            <span className={`ml-1.5 font-semibold ${savingWeek ? 'text-gray-500' : 'text-indigo-400'}`}>
+            <span className={`ml-1.5 font-semibold ${savingWeek ? 'text-ink-muted' : 'text-accent'}`}>
               Week {currentWeek}
             </span>
           </span>
@@ -242,7 +242,7 @@ export default function Timetable() {
       </div>
 
       {error && (
-        <p className="mb-4 text-sm text-red-400 bg-red-900/30 border border-red-800 rounded-lg px-4 py-2">
+        <p className="mb-4 text-sm text-danger bg-danger-bg border border-danger/40 rounded-lg px-4 py-2">
           {error}
         </p>
       )}
@@ -251,9 +251,9 @@ export default function Timetable() {
       {showForm && (
         <form
           onSubmit={handleSubmit}
-          className="mb-6 p-4 bg-gray-800 border border-gray-700 rounded-xl flex flex-col gap-3"
+          className="mb-6 p-4 bg-surface border border-border rounded-xl flex flex-col gap-3"
         >
-          <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">New Event</h2>
+          <h2 className="text-sm font-semibold text-ink-secondary uppercase tracking-wide">New Event</h2>
           <input
             type="text"
             placeholder="Title"
@@ -265,7 +265,7 @@ export default function Timetable() {
           />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1">
-              <span className="text-xs text-gray-400">Start time</span>
+              <span className="text-xs text-ink-secondary">Start time</span>
               <input
                 type="datetime-local"
                 value={form.start_time}
@@ -275,7 +275,7 @@ export default function Timetable() {
               />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-xs text-gray-400">End time</span>
+              <span className="text-xs text-ink-secondary">End time</span>
               <input
                 type="datetime-local"
                 value={form.end_time}
@@ -287,7 +287,7 @@ export default function Timetable() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-xs text-gray-400">Week</span>
+            <span className="text-xs text-ink-secondary">Week</span>
             <div className="flex gap-2">
               {WEEK_OPTIONS.map(opt => (
                 <button
@@ -296,8 +296,8 @@ export default function Timetable() {
                   onClick={() => setForm(f => ({ ...f, week: opt.value }))}
                   className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
                     form.week === opt.value
-                      ? 'bg-indigo-600 border-indigo-500 text-white'
-                      : 'bg-gray-900 border-gray-700 text-gray-400 hover:text-gray-200'
+                      ? 'bg-accent border-accent text-background'
+                      : 'bg-background border-border text-ink-secondary hover:text-ink'
                   }`}
                 >
                   {opt.label}
@@ -306,12 +306,12 @@ export default function Timetable() {
             </div>
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer select-none">
+          <label className="flex items-center gap-2 text-sm text-ink-secondary cursor-pointer select-none">
             <input
               type="checkbox"
               checked={form.recurring}
               onChange={e => setForm(f => ({ ...f, recurring: e.target.checked }))}
-              className="w-4 h-4 rounded accent-indigo-500"
+              className="w-4 h-4 rounded accent-accent"
             />
             Repeats every week
           </label>
@@ -319,7 +319,7 @@ export default function Timetable() {
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+              className="px-4 py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-background text-sm font-medium rounded-lg transition-colors"
             >
               {submitting ? 'Saving…' : 'Save Event'}
             </button>
@@ -330,15 +330,15 @@ export default function Timetable() {
       {/* Empty state */}
       {visibleEvents.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center mb-4">
-            <svg className="w-7 h-7 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-14 h-14 rounded-full bg-surface flex items-center justify-center mb-4">
+            <svg className="w-7 h-7 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <p className="text-gray-400 text-sm font-medium">No events for Week {viewWeek}</p>
-          <p className="text-gray-600 text-sm mt-1">
-            Click <span className="text-indigo-400">+ Add Event</span> to block out this week
+          <p className="text-ink-secondary text-sm font-medium">No events for Week {viewWeek}</p>
+          <p className="text-ink-muted text-sm mt-1">
+            Click <span className="text-accent">+ Add Event</span> to block out this week
           </p>
         </div>
       )}
@@ -351,7 +351,7 @@ export default function Timetable() {
             if (!dayEvents) return null;
             return (
               <section key={dayIndex}>
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-ink-muted mb-3">
                   {DAYS[dayIndex]}
                 </h2>
                 <div className="flex flex-wrap gap-2">
@@ -363,7 +363,7 @@ export default function Timetable() {
                         <form
                           key={event.id}
                           onSubmit={e => handleSave(e, event.id)}
-                          className="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 flex flex-col gap-3"
+                          className="w-full bg-surface border border-border rounded-xl p-3 flex flex-col gap-3"
                         >
                           <input
                             type="text"
@@ -375,7 +375,7 @@ export default function Timetable() {
                           />
                           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <label className="flex flex-col gap-1">
-                              <span className="text-xs text-gray-400">Start time</span>
+                              <span className="text-xs text-ink-secondary">Start time</span>
                               <input
                                 type="datetime-local"
                                 value={editForm.start_time}
@@ -385,7 +385,7 @@ export default function Timetable() {
                               />
                             </label>
                             <label className="flex flex-col gap-1">
-                              <span className="text-xs text-gray-400">End time</span>
+                              <span className="text-xs text-ink-secondary">End time</span>
                               <input
                                 type="datetime-local"
                                 value={editForm.end_time}
@@ -397,7 +397,7 @@ export default function Timetable() {
                           </div>
 
                           <div className="flex flex-col gap-1">
-                            <span className="text-xs text-gray-400">Week</span>
+                            <span className="text-xs text-ink-secondary">Week</span>
                             <div className="flex gap-2">
                               {WEEK_OPTIONS.map(opt => (
                                 <button
@@ -406,8 +406,8 @@ export default function Timetable() {
                                   onClick={() => setEditForm(f => ({ ...f, week: opt.value }))}
                                   className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
                                     editForm.week === opt.value
-                                      ? 'bg-indigo-600 border-indigo-500 text-white'
-                                      : 'bg-gray-900 border-gray-700 text-gray-400 hover:text-gray-200'
+                                      ? 'bg-accent border-accent text-background'
+                                      : 'bg-background border-border text-ink-secondary hover:text-ink'
                                   }`}
                                 >
                                   {opt.label}
@@ -416,28 +416,28 @@ export default function Timetable() {
                             </div>
                           </div>
 
-                          <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer select-none">
+                          <label className="flex items-center gap-2 text-sm text-ink-secondary cursor-pointer select-none">
                             <input
                               type="checkbox"
                               checked={editForm.recurring}
                               onChange={e => setEditForm(f => ({ ...f, recurring: e.target.checked }))}
-                              className="w-4 h-4 rounded accent-indigo-500"
+                              className="w-4 h-4 rounded accent-accent"
                             />
                             Repeats every week
                           </label>
 
-                          <div className="flex justify-end gap-2 pt-1 border-t border-gray-700">
+                          <div className="flex justify-end gap-2 pt-1 border-t border-border">
                             <button
                               type="button"
                               onClick={cancelEdit}
-                              className="px-3 py-1.5 text-xs text-gray-400 hover:text-gray-200 transition-colors"
+                              className="px-3 py-1.5 text-xs text-ink-secondary hover:text-ink transition-colors"
                             >
                               Cancel
                             </button>
                             <button
                               type="submit"
                               disabled={saving}
-                              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+                              className="px-3 py-1.5 bg-accent hover:bg-accent-hover disabled:opacity-50 text-background text-xs font-medium rounded-lg transition-colors"
                             >
                               {saving ? 'Saving…' : 'Save'}
                             </button>
@@ -449,21 +449,21 @@ export default function Timetable() {
                     return (
                       <div
                         key={event.id}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-full text-sm"
+                        className="flex items-center gap-2 px-3 py-1.5 bg-surface border border-border rounded-full text-sm"
                       >
-                        <span className="text-white font-medium">{event.title}</span>
-                        <span className="text-gray-400 tabular-nums">
+                        <span className="text-ink font-medium">{event.title}</span>
+                        <span className="text-ink-secondary tabular-nums">
                           {formatTime(event.start_time)}–{formatTime(event.end_time)}
                         </span>
                         {event.week !== 'both' && (
-                          <span className="text-xs text-indigo-400">Wk {event.week}</span>
+                          <span className="text-xs text-accent">Wk {event.week}</span>
                         )}
                         {event.recurring && (
-                          <span className="text-xs text-gray-500" title="Recurring">↻</span>
+                          <span className="text-xs text-ink-muted" title="Recurring">↻</span>
                         )}
                         <button
                           onClick={() => startEdit(event)}
-                          className="ml-0.5 text-gray-600 hover:text-indigo-400 transition-colors"
+                          className="ml-0.5 text-ink-muted hover:text-accent transition-colors"
                           aria-label="Edit event"
                         >
                           <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -473,7 +473,7 @@ export default function Timetable() {
                         <button
                           onClick={() => handleDelete(event.id)}
                           disabled={deleting === event.id}
-                          className="text-gray-600 hover:text-red-400 transition-colors disabled:opacity-50"
+                          className="text-ink-muted hover:text-danger transition-colors disabled:opacity-50"
                           aria-label="Delete event"
                         >
                           {deleting === event.id ? (
