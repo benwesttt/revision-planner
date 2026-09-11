@@ -50,7 +50,7 @@ function AppShell() {
 
   return (
     <TimerProvider>
-      <div className="flex flex-col h-screen bg-gray-950 text-gray-100">
+      <div className="flex flex-col h-screen bg-background text-ink">
         <TopBar onMenuToggle={() => setSidebarOpen(v => !v)} />
         <div className="flex flex-1 min-h-0 overflow-hidden">
           <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
