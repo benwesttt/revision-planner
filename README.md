@@ -111,4 +111,4 @@ It then fills free time gaps in your timetable with revision blocks, rotating ac
 Ben West — Data Science student at the University of Bristol.
 Built solo, starting summer 2026, as both a personal tool and a potential product.
 
-[@revisrapp]
+[@revisrapp](https://instagram.com/revisrapp)
