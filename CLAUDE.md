@@ -83,3 +83,5 @@ Rules:
 - Informational (non error/warning/success) tinted banner:
   bg-accent/10 border-accent/30 text-accent
 - Accent-colored inline text/links on hover: text-accent hover:text-accent-hover
+- Dashed "add new" button: border border-dashed border-border text-ink-muted
+  hover:text-ink-secondary hover:border-accent
