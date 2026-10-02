@@ -22,13 +22,13 @@ class CourseUpdate(BaseModel):
     name: Optional[str] = None
     color: Optional[str] = None
     is_active: Optional[bool] = None
-    mode: Literal["learning", "revision"] = "revision"
+    mode: Literal["learning", "revision"] = "learning"
     subject_type: Optional[Literal["discrete", "essay_based"]] = None
 
 
 class CourseResponse(CourseBase):
     id: int
-    mode: Literal["learning", "revision"] = "revision"
+    mode: Literal["learning", "revision"] = "learning"
 
 
 class TopicBehindPace(BaseModel):

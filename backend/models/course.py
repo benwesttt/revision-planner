@@ -12,7 +12,7 @@ class Course(Base):
     name = Column(String, nullable=False)
     color = Column(String, nullable=False)
     is_active = Column(Boolean, nullable=False, default=True, server_default="true")
-    mode = Column(String, nullable=False, default='revision', server_default='revision')
+    mode = Column(String, nullable=False, default='learning', server_default='learning')
     subject_type = Column(String, nullable=False, default='discrete', server_default='discrete')
 
     user = relationship("User", back_populates="courses")
