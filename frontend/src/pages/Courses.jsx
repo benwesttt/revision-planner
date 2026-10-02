@@ -53,7 +53,8 @@ export default function Courses() {
       const res = await fetchWithAuth(`${API_BASE_URL}/courses/?user_id=${USER_ID}`);
       if (!res.ok) throw new Error('Failed to fetch courses');
       const data = await res.json();
-      setCourses(data);
+      const sorted = [...data].sort((a, b) => (b.is_active === a.is_active ? 0 : b.is_active ? 1 : -1));
+      setCourses(sorted);
       const topicMap = {};
       await Promise.all(
         data.map(async (course) => {
