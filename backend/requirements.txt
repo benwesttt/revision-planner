@@ -1,11 +1,11 @@
 fastapi==0.104.1
 uvicorn==0.24.0
-sqlalchemy
-alembic
+sqlalchemy==2.1.2
+alembic==1.20.0
 pydantic==2.5.0
 pydantic-settings==2.1.0
-python-dotenv
-psycopg2-binary
+python-dotenv==1.2.4
+psycopg2-binary==2.9.13
 
-python-jose
+python-jose==3.5.0
 httpx<0.28
