@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -12,5 +12,6 @@ class Assessment(Base):
     name = Column(String, nullable=False)
     type = Column(String, nullable=False)
     due_date = Column(DateTime, nullable=True)
+    completed = Column(Boolean, nullable=False, default=False, server_default="false")
 
     course = relationship("Course", back_populates="assessments")

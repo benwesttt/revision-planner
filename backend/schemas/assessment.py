@@ -11,6 +11,7 @@ class AssessmentBase(BaseModel):
     name: str
     type: str
     due_date: Optional[datetime] = None
+    completed: bool = False
 
 
 class AssessmentCreate(AssessmentBase):
@@ -22,6 +23,7 @@ class AssessmentUpdate(BaseModel):
     name: Optional[str] = None
     type: Optional[str] = None
     due_date: Optional[datetime] = None
+    completed: Optional[bool] = None
 
 
 class AssessmentResponse(AssessmentBase):

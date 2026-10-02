@@ -12,7 +12,8 @@ function daysUntil(isoStr) {
   return Math.ceil(diff / 86400000);
 }
 
-function urgencyClasses(days) {
+function urgencyClasses(days, completed) {
+  if (completed)    return { border: 'border-success', badge: 'bg-success-bg text-success' };
   if (days === null) return { border: 'border-border', badge: 'bg-border text-ink-secondary' };
   if (days <= 7)     return { border: 'border-danger',  badge: 'bg-danger-bg text-danger' };
   if (days <= 14)    return { border: 'border-warning', badge: 'bg-warning-bg text-warning' };
@@ -104,6 +105,21 @@ export default function Assessments() {
       setError(err.message);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleToggleCompleted = async (assessment) => {
+    const nextCompleted = !assessment.completed;
+    setAssessments(prev => prev.map(a => a.id === assessment.id ? { ...a, completed: nextCompleted } : a));
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL}/assessments/${assessment.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ completed: nextCompleted }),
+      });
+      if (!res.ok) throw new Error('Failed to update assessment');
+    } catch (err) {
+      setAssessments(prev => prev.map(a => a.id === assessment.id ? { ...a, completed: !nextCompleted } : a));
+      setError(err.message);
     }
   };
 
@@ -294,7 +310,7 @@ export default function Assessments() {
         <div className="flex flex-col gap-3">
           {assessments.map(a => {
             const days = daysUntil(a.due_date);
-            const { border, badge } = urgencyClasses(days);
+            const { border, badge } = urgencyClasses(days, a.completed);
             const isEditing = editingId === a.id;
             const isPending = pendingDelete === a.id;
 
@@ -386,9 +402,16 @@ export default function Assessments() {
                   </form>
                 ) : (
                   <div className="flex items-start justify-between gap-4">
+                    <input
+                      type="checkbox"
+                      checked={a.completed}
+                      onChange={() => handleToggleCompleted(a)}
+                      className="mt-1 accent-accent shrink-0"
+                      aria-label={a.completed ? 'Mark assessment incomplete' : 'Mark assessment complete'}
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-sm font-semibold text-ink">{a.name}</span>
+                        <span className={`text-sm font-semibold text-ink ${a.completed ? 'line-through text-ink-secondary' : ''}`}>{a.name}</span>
                         <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-border text-ink-secondary capitalize">
                           {a.type}
                         </span>
@@ -396,7 +419,9 @@ export default function Assessments() {
                       <div className="flex items-center gap-3 text-xs text-ink-muted">
                         <span>{courseMap[a.course_id] ?? `Course ${a.course_id}`}</span>
                         <span className={`px-2 py-0.5 rounded-full font-medium ${badge}`}>
-                          {days === null
+                          {a.completed
+                            ? 'Completed'
+                            : days === null
                             ? 'No due date'
                             : days < 0
                             ? 'Overdue'
