@@ -4,6 +4,11 @@ import { useApi } from '../lib/api';
 
 const USER_ID = 1;
 
+const TOPIC_STATUS_LABELS = {
+  pre_learned: 'Pre-learned',
+  taught: 'Taught',
+};
+
 const SUBJECT_TYPES = [
   { value: 'discrete', label: 'Discrete topics (STEM, law, medicine...)' },
   { value: 'essay_based', label: 'Essay-based (humanities)' },
@@ -535,7 +540,14 @@ export default function Courses() {
                       return (
                         <li key={topic.id} className="flex items-start gap-2 px-2 py-1.5 bg-background rounded-lg">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-ink-secondary">{topic.name}</p>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-sm text-ink-secondary">{topic.name}</p>
+                              {course.mode === 'learning' && TOPIC_STATUS_LABELS[topic.status] && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-border text-ink-secondary shrink-0">
+                                  {TOPIC_STATUS_LABELS[topic.status]}
+                                </span>
+                              )}
+                            </div>
                             {topic.description && (
                               <p className="text-xs text-ink-muted mt-0.5">{topic.description}</p>
                             )}
