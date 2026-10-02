@@ -29,7 +29,12 @@ def list_courses(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return db.query(Course).filter(Course.user_id == current_user.id).all()
+    return (
+        db.query(Course)
+        .filter(Course.user_id == current_user.id)
+        .order_by(Course.id)
+        .all()
+    )
 
 
 @router.get("/{course_id}", response_model=CourseResponse)
