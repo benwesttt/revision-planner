@@ -31,7 +31,7 @@ def _plan_blocks(db_session, plan):
 def test_topics_rotate_when_slots_outnumber_topics(db_session, current_user):
     # One course, two never-revised topics with no assessments — they score
     # identically, so nothing but the rotation logic distinguishes them.
-    course = Course(user_id=current_user.id, name="Rotation Course", color="#6366f1")
+    course = Course(user_id=current_user.id, name="Rotation Course", color="#6366f1", mode='revision')
     db_session.add(course)
     db_session.commit()
     db_session.refresh(course)
