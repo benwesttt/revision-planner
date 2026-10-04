@@ -240,6 +240,9 @@ export default function Timetable() {
           />
         </div>
       </div>
+      <p className="text-xs text-ink-muted -mt-4 mb-6">
+        The planner week advances automatically each Monday. Use the toggle to re-sync it if it's out of step.
+      </p>
 
       {error && (
         <p className="mb-4 text-sm text-danger bg-danger-bg border border-danger/40 rounded-lg px-4 py-2">

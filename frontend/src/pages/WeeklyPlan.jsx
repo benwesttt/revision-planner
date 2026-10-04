@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { API_BASE_URL } from '../api';
 import { useApi } from '../lib/api';
+import { weekForDate } from '../lib/week';
 
 const USER_ID = 1;
 
@@ -29,7 +30,11 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function dayWeek(startDateStr, dayOffset, currentWeek) {
+function dayWeek(startDateStr, dayOffset, currentWeek, weekAnchor) {
+  // With an anchor, each day's week comes from its own date, so a plan that
+  // spans a Monday boundary is labelled correctly without any stored flag.
+  if (weekAnchor) return weekForDate(weekAnchor, addDays(startDateStr, dayOffset));
+
   const jsDay = new Date(startDateStr + 'T12:00:00').getDay();
   const daysInStartWeek = jsDay === 0 ? 1 : 7 - jsDay + 1;
   const inStartWeek = dayOffset < daysInStartWeek;
@@ -43,6 +48,7 @@ export default function WeeklyPlan() {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
   const [currentWeek, setCurrentWeek] = useState('A');
+  const [weekAnchor, setWeekAnchor] = useState(null);
 
   const [courseMap, setCourseMap] = useState({});
   const [topicMap, setTopicMap] = useState({});
@@ -91,7 +97,12 @@ export default function WeeklyPlan() {
   useEffect(() => {
     fetchWithAuth(`${API_BASE_URL}/revision-preferences/?user_id=${USER_ID}`)
       .then(r => r.ok ? r.json() : [])
-      .then(prefs => { if (prefs.length > 0) setCurrentWeek(prefs[0].current_week ?? 'A'); })
+      .then(prefs => {
+        if (prefs.length > 0) {
+          setCurrentWeek(prefs[0].current_week ?? 'A');
+          setWeekAnchor(prefs[0].week_a_anchor ?? null);
+        }
+      })
       .catch(() => {});
 
     async function loadLatestPlan() {
@@ -153,7 +164,7 @@ export default function WeeklyPlan() {
     days.forEach((day, i) => {
       if (!groups[day]) groups[day] = [];
       const jsDay = new Date(day + 'T12:00:00').getDay();
-      const wk = dayWeek(plan.start_date, i, currentWeek);
+      const wk = dayWeek(plan.start_date, i, currentWeek, weekAnchor);
 
       for (const ev of calendarEvents) {
         const evJsDay = new Date(ev.start_time).getDay();
@@ -167,7 +178,7 @@ export default function WeeklyPlan() {
     });
 
     return groups;
-  }, [plan, calendarEvents, currentWeek]);
+  }, [plan, calendarEvents, currentWeek, weekAnchor]);
 
   const showSkeleton = loading || generating;
 
@@ -236,7 +247,7 @@ export default function WeeklyPlan() {
         <div className="flex flex-col gap-8">
           {days.map((day, i) => {
             const items = itemsByDay[day] ?? [];
-            const wk = dayWeek(plan.start_date, i, currentWeek);
+            const wk = dayWeek(plan.start_date, i, currentWeek, weekAnchor);
             return (
               <section key={day}>
                 <h2 className="text-xs font-semibold uppercase tracking-widest text-ink-muted mb-3 flex items-center gap-2">
