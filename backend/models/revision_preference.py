@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, JSON, String
+from sqlalchemy import Column, Date, ForeignKey, Integer, JSON, String
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -13,6 +13,7 @@ class RevisionPreference(Base):
     min_session_minutes = Column(Integer, nullable=True)
     max_session_minutes = Column(Integer, nullable=True)
     current_week = Column(String, default='A', nullable=False)
+    week_a_anchor = Column(Date, nullable=True)
     daily_hours_target = Column(Integer, nullable=True)
 
     user = relationship("User", back_populates="revision_preference")

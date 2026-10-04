@@ -1,6 +1,7 @@
+from datetime import date
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RevisionPreferenceBase(BaseModel):
@@ -15,16 +16,18 @@ class RevisionPreferenceBase(BaseModel):
 
 
 class RevisionPreferenceCreate(RevisionPreferenceBase):
-    pass
+    # Create/Update re-anchor the week, so reject anything that isn't A or B.
+    current_week: str = Field(default='A', pattern="^[AB]$")
 
 
 class RevisionPreferenceUpdate(BaseModel):
     preferred_methods: Optional[List[str]] = None
     min_session_minutes: Optional[int] = None
     max_session_minutes: Optional[int] = None
-    current_week: Optional[str] = None
+    current_week: Optional[str] = Field(default=None, pattern="^[AB]$")
     daily_hours_target: Optional[int] = None
 
 
 class RevisionPreferenceResponse(RevisionPreferenceBase):
     id: int
+    week_a_anchor: Optional[date] = None

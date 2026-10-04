@@ -13,6 +13,7 @@ from models.revision_preference import RevisionPreference
 from models.revision_session import RevisionSession
 from models.topic import Topic
 from models.topic_resource import TopicResource
+from services.week import effective_current_week
 
 STUDY_START = time(8, 0)
 STUDY_END = time(22, 0)
@@ -358,7 +359,7 @@ def generate_plan(user_id: int, start_date: date, db: Session) -> Tuple[Plan, Li
         .first()
     )
 
-    current_week      = pref.current_week        if pref and pref.current_week        else 'A'
+    current_week      = effective_current_week(pref, start_date)
     full_session_mins = pref.max_session_minutes  if pref and pref.max_session_minutes  else FULL_SESSION_MINUTES
     min_session_mins  = pref.min_session_minutes  if pref and pref.min_session_minutes  else MIN_SESSION_MINUTES
     daily_cap_mins    = (pref.daily_hours_target * 60) if pref and pref.daily_hours_target else MAX_REVISION_HOURS_PER_DAY * 60
