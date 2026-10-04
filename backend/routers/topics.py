@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from auth import get_current_user
@@ -60,7 +61,18 @@ def create_topic(
     )
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
-    topic = Topic(**payload.model_dump())
+    data = payload.model_dump()
+    # No explicit sequence_order (or an explicit null): append to the end of
+    # the course's sequence. func.max ignores NULLs, so unsequenced topics
+    # don't skew the result; an empty or fully-unsequenced course starts at 1.
+    if data["sequence_order"] is None:
+        highest = (
+            db.query(func.max(Topic.sequence_order))
+            .filter(Topic.course_id == payload.course_id)
+            .scalar()
+        )
+        data["sequence_order"] = 1 if highest is None else highest + 1
+    topic = Topic(**data)
     db.add(topic)
     db.commit()
     db.refresh(topic)

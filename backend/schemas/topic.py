@@ -13,7 +13,7 @@ class TopicBase(BaseModel):
 
 
 class TopicCreate(TopicBase):
-    pass
+    sequence_order: Optional[int] = None
 
 
 class TopicUpdate(BaseModel):

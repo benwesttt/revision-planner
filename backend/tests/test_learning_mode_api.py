@@ -21,6 +21,60 @@ def test_update_topic_persists_taught_status(client, db_session, owned_topic):
     assert owned_topic.status == 'taught'
 
 
+def test_create_topic_auto_assigns_sequence_after_highest_existing(client, db_session, current_user):
+    course = Course(
+        user_id=current_user.id, name="Sequenced Course", color="#10b981", mode='learning',
+    )
+    db_session.add(course)
+    db_session.commit()
+    db_session.refresh(course)
+
+    # Gap at 3-4 and an unsequenced topic: the new topic must follow the
+    # highest value (5), not fill the gap or count the NULL row.
+    db_session.add_all([
+        Topic(course_id=course.id, name="Seq 1", sequence_order=1),
+        Topic(course_id=course.id, name="Seq 2", sequence_order=2),
+        Topic(course_id=course.id, name="Seq 5", sequence_order=5),
+        Topic(course_id=course.id, name="Unsequenced", sequence_order=None),
+    ])
+    db_session.commit()
+
+    resp = client.post("/topics/", json={"course_id": course.id, "name": "New Topic"})
+    assert resp.status_code == 201
+    assert resp.json()["sequence_order"] == 6
+
+
+def test_create_topic_in_empty_course_starts_sequence_at_one(client, db_session, current_user):
+    course = Course(
+        user_id=current_user.id, name="Empty Course", color="#10b981", mode='learning',
+    )
+    db_session.add(course)
+    db_session.commit()
+    db_session.refresh(course)
+
+    resp = client.post("/topics/", json={"course_id": course.id, "name": "First Topic"})
+    assert resp.status_code == 201
+    assert resp.json()["sequence_order"] == 1
+
+
+def test_create_topic_honors_explicit_sequence_order(client, db_session, current_user):
+    course = Course(
+        user_id=current_user.id, name="Explicit Course", color="#10b981", mode='learning',
+    )
+    db_session.add(course)
+    db_session.commit()
+    db_session.refresh(course)
+
+    db_session.add(Topic(course_id=course.id, name="Seq 1", sequence_order=1))
+    db_session.commit()
+
+    resp = client.post(
+        "/topics/", json={"course_id": course.id, "name": "Placed Topic", "sequence_order": 1},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["sequence_order"] == 1
+
+
 def test_learning_status_returns_422_for_revision_mode_course(client, db_session, current_user):
     course = Course(
         user_id=current_user.id, name="Revision Course", color="#6366f1", mode='revision',
