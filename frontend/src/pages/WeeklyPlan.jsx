@@ -30,6 +30,15 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
+// Local calendar date as YYYY-MM-DD. Unlike toISOString(), this doesn't
+// roll over to the UTC date, so it's right during UK summer time.
+function localDateISO(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 function dayWeek(startDateStr, dayOffset, currentWeek, weekAnchor) {
   // With an anchor, each day's week comes from its own date, so a plan that
   // spans a Monday boundary is labelled correctly without any stored flag.
@@ -182,6 +191,10 @@ export default function WeeklyPlan() {
 
   const showSkeleton = loading || generating;
 
+  // YYYY-MM-DD strings compare correctly as plain strings.
+  const todayLocal = localDateISO();
+  const planEnded = !!plan && days.every(day => day < todayLocal);
+
   return (
     <div className="max-w-3xl">
       {/* Header */}
@@ -242,10 +255,27 @@ export default function WeeklyPlan() {
         </div>
       )}
 
-      {/* 7-day timeline */}
-      {!showSkeleton && plan && (
+      {/* Plan has ended: every day is in the past */}
+      {!showSkeleton && planEnded && (
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="w-14 h-14 rounded-full bg-surface flex items-center justify-center mb-4">
+            <svg className="w-7 h-7 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <p className="text-ink-secondary text-sm font-medium">Plan has ended</p>
+          <p className="text-ink-muted text-sm mt-1">
+            Click <span className="text-accent">Regenerate Plan</span> to build a new 7-day revision schedule
+          </p>
+        </div>
+      )}
+
+      {/* 7-day timeline: past days are hidden, today onwards stays */}
+      {!showSkeleton && plan && !planEnded && (
         <div className="flex flex-col gap-8">
           {days.map((day, i) => {
+            if (day < todayLocal) return null;
             const items = itemsByDay[day] ?? [];
             const wk = dayWeek(plan.start_date, i, currentWeek, weekAnchor);
             return (
